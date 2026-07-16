@@ -1,14 +1,80 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+enum ScrimMode {
+  BR
+  CS
+}
+
+enum ScrimStatus {
+  OPEN
+  CLOSED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Scrim {
+  id              Int               @id @default(autoincrement())
+  title           String
+  mode            ScrimMode
+  fee             Int
+  date            DateTime
+  time            String
+  image           String
+  rules           String            @db.Text
+  maxTeams        Int
+  status          ScrimStatus       @default(OPEN)
+
+  roomId          String?
+  roomPassword    String?
+  roomReleased    Boolean           @default(false)
+
+  registrations   Registration[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model Registration {
+  id               Int              @id @default(autoincrement())
+  registrationCode String           @unique
+
+  teamName         String
+  iglName          String
+  phone            String           @db.VarChar(15)
+
+  slotNumber       Int
+
+  paymentStatus    PaymentStatus    @default(PENDING)
+
+  scrimId          Int
+  scrim            Scrim            @relation(fields: [scrimId], references: [id])
+
+  payment          Payment?
+
+  createdAt        DateTime         @default(now())
+}
+
+model Payment {
+  id               Int              @id @default(autoincrement())
+
+  registrationId   Int              @unique
+  registration     Registration     @relation(fields: [registrationId], references: [id])
+
+  amount           Int
+  method           String
+  transactionId    String           @unique
+
+  status           PaymentStatus
+
+  paidAt           DateTime         @default(now())
 }
