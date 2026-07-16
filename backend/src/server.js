@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import registrationRoutes from "./routes/registrationRoutes.js";
 import scrimRoutes from "./routes/scrimRoutes.js";
-
+import paymentRoutes from "./routes/paymentRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -20,6 +20,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/scrims", scrimRoutes);
 app.use("/api/registrations", registrationRoutes);
+app.use("/api/payments", paymentRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
