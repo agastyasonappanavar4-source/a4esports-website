@@ -97,7 +97,7 @@ const highPrize = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-100 to-white">
+    <main className="min-h-screen bg-linear-to-br from-gray-100 to-white">
 
       <Navbar />
 

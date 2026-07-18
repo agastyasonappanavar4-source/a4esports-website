@@ -6,7 +6,7 @@ export default function TournamentPage() {
 
       {/* Banner */}
 
-      <div className="relative flex h-[450px] w-full items-end bg-gradient-to-r from-orange-600 via-red-600 to-purple-700">
+      <div className="relative flex h-112.5 w-full items-end bg-linear-to-r from-orange-600 via-red-600 to-purple-700">
    <div className="absolute inset-0 bg-black/35" />
 
 <div className="relative mx-auto flex w-full max-w-7xl items-end justify-between p-10 text-white">
@@ -97,7 +97,7 @@ export default function TournamentPage() {
 </div>
 
 <p className="mt-6 text-lg text-gray-600">
-              India's biggest weekly Battle Royale custom room.
+              India&apos;s biggest weekly Battle Royale custom room.
               Compete against top teams and win exciting cash prizes.
             </p>
 
@@ -121,7 +121,7 @@ export default function TournamentPage() {
 
                 <li>✅ Respect organizers</li>
 
-                <li>✅ Internet issues are player's responsibility</li>
+                <li>✅ Internet issues are player&apos;s responsibility</li>
 
                 <li>✅ Organizer decision is final</li>
 
