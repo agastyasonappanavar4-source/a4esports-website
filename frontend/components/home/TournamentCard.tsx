@@ -1,29 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { Trophy, Users, IndianRupee, Clock3, ArrowRight } from "lucide-react";
+import {
+  Trophy,
+  Users,
+  IndianRupee,
+  Clock3,
+  ArrowRight,
+} from "lucide-react";
 
 interface TournamentCardProps {
   id: number;
   title: string;
-  prize: string;
-  entry: string;
-  slots: string;
+  fee: number;
+  maxTeams: number;
+  mode: string;
+  date: string;
 }
 
 export default function TournamentCard({
   id,
   title,
-  prize,
-  entry,
-  slots,
+  fee,
+  maxTeams,
+  mode,
+  date,
 }: TournamentCardProps) {
+  const entry = fee === 0 ? "FREE" : `₹${fee}`;
+
+  const formattedDate = new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
   return (
     <Link href={`/scrims/${id}`} className="cursor-pointer">
       <div className="group min-w-77.5 cursor-pointer overflow-hidden rounded-3xl bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl">
 
         {/* Banner */}
-        <div className="relative h-48 overflow-hidden bg-linear-to-br from-orange-500 via-red-500 to-purple-700 transition-transform duration-500 group-hover:scale-105">
+        <div className="relative h-48 overflow-hidden bg-linear-to-br from-orange-500 via-red-500 to-purple-700">
 
           <div className="absolute inset-0 bg-black/20" />
 
@@ -37,9 +53,10 @@ export default function TournamentCard({
             </h2>
 
             <p className="mt-2 text-white/80">
-              Battle Royale Tournament
+              {mode}
             </p>
           </div>
+
         </div>
 
         {/* Card Content */}
@@ -57,7 +74,7 @@ export default function TournamentCard({
               </div>
 
               <p className="mt-2 font-bold">
-                {prize}
+                Coming Soon
               </p>
             </div>
 
@@ -81,12 +98,14 @@ export default function TournamentCard({
 
             <div className="flex items-center gap-2">
               <Users size={18} className="text-blue-500" />
-              <span>{slots}</span>
+
+              <span>{maxTeams} Teams</span>
             </div>
 
             <div className="flex items-center gap-2 text-orange-500">
               <Clock3 size={18} />
-              Tonight
+
+              <span>{formattedDate}</span>
             </div>
 
           </div>
@@ -94,8 +113,9 @@ export default function TournamentCard({
           <div>
 
             <div className="mb-2 flex justify-between text-sm">
-              <span>Slots Filled</span>
-              <span>{slots}</span>
+              <span>Slots</span>
+
+              <span>{maxTeams}</span>
             </div>
 
             <div className="h-2 overflow-hidden rounded-full bg-gray-200">

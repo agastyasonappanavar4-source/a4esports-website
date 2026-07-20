@@ -6,9 +6,10 @@ import { ChevronRight } from "lucide-react";
 interface Tournament {
   id: number;
   title: string;
-  prize: string;
-  entry: string;
-  slots: string;
+  mode: string;
+  fee: number;
+  maxTeams: number;
+  date: string;
 }
 
 interface TournamentRowProps {
@@ -47,9 +48,10 @@ export default function TournamentRow({
             key={tournament.id}
             id={tournament.id}
             title={tournament.title}
-            prize={tournament.prize}
-            entry={tournament.entry}
-            slots={tournament.slots}
+            mode={tournament.mode}
+            fee={tournament.fee}
+            maxTeams={tournament.maxTeams}
+            date={tournament.date}
           />
         ))}
       </div>

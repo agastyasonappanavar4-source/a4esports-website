@@ -28,3 +28,15 @@ export async function apiRequest(
 
   return data;
 }
+
+// ----------------------
+// Scrims API
+// ----------------------
+
+export async function getScrims() {
+  return apiRequest("/api/scrims");
+}
+
+export async function getScrim(id: number) {
+  return apiRequest(`/api/scrims/${id}`);
+}
