@@ -120,7 +120,7 @@ export default function FeaturedEvents() {
 
                   </div>
 
-                  <div className="flex h-[420px] items-center justify-center bg-gray-200 text-2xl font-bold">
+                  <div className="flex h-105 items-center justify-center bg-gray-200 text-2xl font-bold">
 
                     Banner Image
 

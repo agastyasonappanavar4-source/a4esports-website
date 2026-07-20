@@ -1,21 +1,29 @@
 const API = "http://localhost:5000";
 
 export async function getScrims() {
-  const response = await fetch(`${API}/api/scrims`);
+  const response = await fetch(`${API}/api/scrims`, {
+    cache: "no-store",
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch scrims");
   }
 
-  return response.json();
+  const data = await response.json();
+
+  return data.data;
 }
 
 export async function getScrim(id: number) {
-  const response = await fetch(`${API}/api/scrims/${id}`);
+  const response = await fetch(`${API}/api/scrims/${id}`, {
+    cache: "no-store",
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch scrim");
   }
 
-  return response.json();
+  const data = await response.json();
+
+  return data.data;
 }

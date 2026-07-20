@@ -1,6 +1,7 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -22,8 +23,22 @@ enum PaymentStatus {
   FAILED
 }
 
+model User {
+  id            Int              @id @default(autoincrement())
+
+  username      String           @unique
+  email         String           @unique
+  password      String
+
+  registrations Registration[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
 model Scrim {
   id              Int               @id @default(autoincrement())
+
   title           String
   mode            ScrimMode
   fee             Int
@@ -32,6 +47,7 @@ model Scrim {
   image           String
   rules           String            @db.Text
   maxTeams        Int
+
   status          ScrimStatus       @default(OPEN)
 
   roomId          String?
@@ -46,6 +62,7 @@ model Scrim {
 
 model Registration {
   id               Int              @id @default(autoincrement())
+
   registrationCode String           @unique
 
   teamName         String
@@ -55,6 +72,9 @@ model Registration {
   slotNumber       Int
 
   paymentStatus    PaymentStatus    @default(PENDING)
+
+  userId           Int?
+  user             User?            @relation(fields: [userId], references: [id])
 
   scrimId          Int
   scrim            Scrim            @relation(fields: [scrimId], references: [id])
