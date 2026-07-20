@@ -13,6 +13,7 @@
     "@radix-ui/react-avatar": "^1.2.2",
     "@radix-ui/react-progress": "^1.1.12",
     "@radix-ui/react-scroll-area": "^1.2.14",
+    "axios": "^1.18.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.6.0",

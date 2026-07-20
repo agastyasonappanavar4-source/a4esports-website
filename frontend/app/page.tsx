@@ -2,6 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import FeaturedEvents from "@/components/home/FeaturedEvents";
 import TournamentRow from "@/components/home/TournamentRow";
+import RegisteredBanner from "@/components/home/RegisteredBanner";
 
 const battleRoyale = [
   {
@@ -102,6 +103,7 @@ export default function Home() {
       <Navbar />
 
       <FeaturedEvents />
+      <RegisteredBanner />
 
       <TournamentRow
         title="🔥 Featured Battle Royale"

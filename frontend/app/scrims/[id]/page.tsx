@@ -1,4 +1,5 @@
 import { Trophy, Users, Calendar, Clock } from "lucide-react";
+import Link from "next/link";
 
 export default function TournamentPage() {
   return (
@@ -280,11 +281,12 @@ export default function TournamentPage() {
 
               </div>
 
-              <button className="mt-8 w-full rounded-2xl bg-orange-500 py-4 text-lg font-bold text-white transition hover:scale-[1.02] hover:bg-orange-600 active:scale-95">
-
+        <Link
+  href="/payment"
+  className="mt-8 block w-full rounded-2xl bg-orange-500 py-4 text-center text-lg font-bold text-white transition hover:scale-[1.02] hover:bg-orange-600 active:scale-95"
+>
   Register Now
-
-</button>
+</Link>
 
 <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4">
 

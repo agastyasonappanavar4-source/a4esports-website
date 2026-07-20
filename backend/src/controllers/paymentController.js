@@ -4,29 +4,42 @@ import crypto from "crypto";
 
 // Create Razorpay Order
 export const createOrder = async (req, res) => {
-    try {
-        const { amount } = req.body;
+  try {
+    const { scrimId } = req.body;
 
-        const options = {
-            amount: amount * 100, // Convert ₹ to paise
-            currency: "INR",
-            receipt: `receipt_${Date.now()}`,
-        };
+    const scrim = await prisma.scrim.findUnique({
+      where: {
+        id: Number(scrimId),
+      },
+    });
 
-        const order = await razorpay.orders.create(options);
-
-        res.status(200).json({
-            success: true,
-            order,
-        });
-    } catch (error) {
-        console.error("Create Order Error:", error);
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to create order",
-        });
+    if (!scrim) {
+      return res.status(404).json({
+        success: false,
+        message: "Tournament not found",
+      });
     }
+
+    const order = await razorpay.orders.create({
+      amount: scrim.fee * 100,
+      currency: "INR",
+      receipt: `scrim_${scrim.id}_${Date.now()}`,
+    });
+
+    res.json({
+      success: true,
+      order,
+      scrim,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to create order",
+    });
+  }
 };
 
 // Verify Razorpay Payment
