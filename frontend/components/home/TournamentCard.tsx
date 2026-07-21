@@ -1,13 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Trophy,
-  Users,
-  IndianRupee,
-  Clock3,
-  ArrowRight,
-} from "lucide-react";
+import { Trophy, Users, IndianRupee, Clock3, ArrowRight } from "lucide-react";
+import { CornerFrame } from "@/components/ui/CornerFrame";
 
 interface TournamentCardProps {
   id: number;
@@ -36,107 +31,85 @@ export default function TournamentCard({
 
   return (
     <Link href={`/scrims/${id}`} className="cursor-pointer">
-      <div className="group min-w-77.5 cursor-pointer overflow-hidden rounded-3xl bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl">
+      <div className="group relative min-w-77.5 border border-border bg-panel transition-all duration-300 hover:-translate-y-1 hover:border-ember/50">
+        <CornerFrame tone="ember" />
 
         {/* Banner */}
-        <div className="relative h-48 overflow-hidden bg-linear-to-br from-orange-500 via-red-500 to-purple-700">
+        <div className="relative h-44 overflow-hidden bg-void bg-tactical-grid">
+          <div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent" />
 
-          <div className="absolute inset-0 bg-black/20" />
-
-          <div className="absolute left-5 top-5 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white animate-pulse">
-            🔴 LIVE
+          <div className="absolute left-4 top-4 flex items-center gap-1.5 border border-ember/40 bg-void/80 px-2.5 py-1 font-mono text-[11px] uppercase tracking-widest text-ember">
+            <span className="h-1.5 w-1.5 rounded-full bg-ember animate-pulse-dot" />
+            Live
           </div>
 
-          <div className="absolute bottom-5 left-5">
-            <h2 className="text-3xl font-black text-white">
+          <div className="absolute bottom-4 left-4 right-4">
+            <h2 className="font-display text-2xl font-bold uppercase leading-tight text-foreground">
               {title}
             </h2>
-
-            <p className="mt-2 text-white/80">
+            <p className="mt-1 font-mono text-xs uppercase tracking-widest text-cyan">
               {mode}
             </p>
           </div>
-
         </div>
 
         {/* Card Content */}
-        <div className="space-y-5 p-5">
-
+        <div className="space-y-4 p-5">
           <div className="grid grid-cols-2 gap-3">
-
-            <div className="rounded-2xl bg-orange-50 p-3 transition group-hover:bg-orange-100">
-              <div className="flex items-center gap-2">
-                <Trophy size={18} className="text-yellow-500" />
-
-                <span className="text-sm text-gray-500">
+            <div className="border border-border bg-void/40 p-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Trophy size={15} className="text-amber" />
+                <span className="font-mono text-[11px] uppercase tracking-widest">
                   Prize Pool
                 </span>
               </div>
-
-              <p className="mt-2 font-bold">
-                Coming Soon
+              <p className="mt-2 font-mono font-semibold text-foreground">
+                TBA
               </p>
             </div>
 
-            <div className="rounded-2xl bg-green-50 p-3 transition group-hover:bg-green-100">
-              <div className="flex items-center gap-2">
-                <IndianRupee size={18} className="text-green-600" />
-
-                <span className="text-sm text-gray-500">
+            <div className="border border-border bg-void/40 p-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <IndianRupee size={15} className="text-ember" />
+                <span className="font-mono text-[11px] uppercase tracking-widest">
                   Entry
                 </span>
               </div>
-
-              <p className="mt-2 font-bold">
+              <p className="mt-2 font-mono font-semibold text-foreground">
                 {entry}
               </p>
             </div>
-
           </div>
 
-          <div className="flex items-center justify-between">
-
+          <div className="flex items-center justify-between font-mono text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Users size={18} className="text-blue-500" />
-
-              <span>{maxTeams} Teams</span>
+              <Users size={15} className="text-cyan" />
+              {maxTeams} Teams
             </div>
-
-            <div className="flex items-center gap-2 text-orange-500">
-              <Clock3 size={18} />
-
-              <span>{formattedDate}</span>
+            <div className="flex items-center gap-2">
+              <Clock3 size={15} className="text-ember" />
+              {formattedDate}
             </div>
-
           </div>
 
           <div>
-
-            <div className="mb-2 flex justify-between text-sm">
-              <span>Slots</span>
-
+            <div className="mb-2 flex justify-between font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+              <span>Slots Filled</span>
               <span>{maxTeams}</span>
             </div>
-
-            <div className="h-2 overflow-hidden rounded-full bg-gray-200">
-              <div className="h-full w-2/3 rounded-full bg-orange-500 transition-all duration-500 group-hover:w-[70%]" />
+            <div className="h-1.5 overflow-hidden bg-void">
+              <div className="h-full w-2/3 bg-ember transition-all duration-500 group-hover:w-[70%]" />
             </div>
-
           </div>
 
-          <div className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-3 font-bold text-white shadow-md transition-all duration-300 group-hover:scale-[1.03] group-hover:bg-orange-600 group-hover:shadow-xl">
-
+          <div className="flex w-full items-center justify-center gap-2 border border-ember/40 bg-ember/10 py-3 font-display font-bold uppercase tracking-wide text-ember transition-all duration-300 group-hover:bg-ember group-hover:text-void">
             View Tournament
-
             <ArrowRight
-              size={18}
+              size={16}
               className="transition-transform duration-300 group-hover:translate-x-1"
             />
-
           </div>
-
         </div>
-
       </div>
     </Link>
   );

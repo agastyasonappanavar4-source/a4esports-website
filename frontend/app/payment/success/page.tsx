@@ -7,7 +7,7 @@ export default function PaymentSuccessPage() {
   const router = useRouter();
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 via-white to-orange-50 p-6">
+    <main className="flex min-h-screen items-center justify-center bg-linear-to-br from-green-50 via-white to-orange-50 p-6">
 
       <div className="w-full max-w-xl rounded-3xl bg-white p-10 text-center shadow-2xl">
 

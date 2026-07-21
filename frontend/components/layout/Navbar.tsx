@@ -1,139 +1,94 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Sidebar from "./Sidebar";
 import { Menu, Search, User, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
-interface LoggedInUser {
-  id: number;
-  username: string;
-  email: string;
-}
+const TICKER = [
+  "WEEKLY BR CHAMPIONSHIP · REG OPEN",
+  "ROOM ID DROPS 15 MIN BEFORE MATCH",
+  "WEEKEND CLASH SQUAD · SLOTS FILLING",
+  "PAYOUTS PROCESSED WITHIN 24H",
+];
 
 export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<LoggedInUser | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/auth/me", {
-          credentials: "include",
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setUser(data.user);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    fetchUser();
-  }, []);
+  const { user, logout } = useAuth();
 
   const handleBrowseClick = () => {
     const section = document.getElementById("scrims");
-
     if (section) {
-      section.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  };
-
-  const handleLogout = async () => {
-    await fetch("http://localhost:5000/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    setUser(null);
-    window.location.reload();
   };
 
   return (
     <>
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-border bg-void/95 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-
           {/* LEFT */}
-
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="rounded-xl p-2 transition hover:bg-gray-100"
+              className="rounded-md p-2 text-foreground transition hover:bg-panel-2"
             >
-              <Menu size={24} />
+              <Menu size={22} />
             </button>
 
             <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-orange-500 to-red-500 font-bold text-white">
+              <div className="flex h-10 w-10 items-center justify-center bg-ember font-display text-lg font-bold text-void [clip-path:polygon(0_0,calc(100%-8px)_0,100%_8px,100%_100%,8px_100%,0_calc(100%-8px))]">
                 FF
               </div>
 
               <div>
-                <h1 className="text-xl font-black tracking-wide">
-                  FF SCRIMS
+                <h1 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+                  FF Scrims
                 </h1>
-
-                <p className="-mt-1 text-xs text-gray-500">
-                  India&apos;s Competitive Platform
+                <p className="-mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Competitive Platform · IN
                 </p>
               </div>
             </Link>
           </div>
 
           {/* SEARCH */}
-
           <div className="hidden w-full max-w-xl px-10 lg:block">
-            <div className="flex items-center rounded-2xl border bg-gray-50 px-4 py-3 transition focus-within:border-orange-500">
-              <Search size={18} className="text-gray-500" />
-
+            <div className="flex items-center border border-border bg-panel px-4 py-2.5 transition focus-within:border-cyan">
+              <Search size={16} className="text-muted-foreground" />
               <input
                 placeholder="Search tournaments..."
-                className="ml-3 w-full bg-transparent outline-none"
+                className="ml-3 w-full bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
           {/* RIGHT */}
-
           <div className="flex items-center gap-3">
-
             <button
               onClick={handleBrowseClick}
-              className="rounded-xl px-5 py-2.5 font-semibold text-gray-700 transition hover:bg-orange-50 hover:text-orange-500"
+              className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground transition hover:text-cyan"
             >
               Browse
             </button>
 
             {user ? (
               <>
-                <div className="flex items-center gap-2 rounded-xl border px-4 py-2">
-
-                  <User size={18} />
-
-                  <span className="font-semibold">
+                <div className="flex items-center gap-2 border border-border px-4 py-2">
+                  <User size={16} className="text-cyan" />
+                  <span className="font-mono text-sm text-foreground">
                     {user.username}
                   </span>
-
                 </div>
 
                 <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 font-semibold text-white transition hover:bg-red-600"
+                  onClick={logout}
+                  className="flex items-center gap-2 border border-destructive/40 bg-destructive/10 px-4 py-2 font-display text-sm font-semibold uppercase text-destructive transition hover:bg-destructive/20"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={16} />
                   Logout
                 </button>
               </>
@@ -141,22 +96,31 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="rounded-xl border border-gray-300 px-5 py-2.5 font-semibold transition hover:border-orange-500 hover:text-orange-500"
+                  className="border border-border px-5 py-2 font-display text-sm font-semibold uppercase tracking-wide text-foreground transition hover:border-cyan hover:text-cyan"
                 >
                   Login
                 </Link>
 
                 <Link
                   href="/register"
-                  className="rounded-xl bg-orange-500 px-5 py-2.5 font-semibold text-white shadow-md transition-all duration-300 hover:scale-[1.03] hover:bg-orange-600 hover:shadow-lg active:scale-95"
+                  className="bg-ember px-5 py-2 font-display text-sm font-semibold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-8px)_0,100%_8px,100%_100%,8px_100%,0_calc(100%-8px))]"
                 >
                   Register
                 </Link>
               </>
             )}
-
           </div>
+        </div>
 
+        <div className="overflow-hidden border-t border-border bg-panel py-1.5">
+          <div className="flex w-max animate-marquee gap-10 whitespace-nowrap font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+            {[...TICKER, ...TICKER].map((item, i) => (
+              <span key={i} className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-ember animate-pulse-dot" />
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
       </header>
     </>

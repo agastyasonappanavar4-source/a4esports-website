@@ -1,349 +1,123 @@
-import { Trophy, Users, Calendar, Clock } from "lucide-react";
+import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Trophy, Users, Calendar, IndianRupee, ShieldCheck } from "lucide-react";
+import { getScrimById } from "@/lib/scrims";
+import { CornerFrame } from "@/components/ui/CornerFrame";
 
-export default function TournamentPage() {
+export default async function TournamentPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const scrim = await getScrimById(Number(id));
+
+  if (!scrim) {
+    notFound();
+  }
+
+  const formattedDate = new Date(scrim.date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const rulesList = scrim.rules
+    ? scrim.rules.split("\n").map((r) => r.trim()).filter(Boolean)
+    : [];
+
   return (
-    <main className="min-h-screen bg-gray-100">
-
-      {/* Banner */}
-
-      <div className="relative flex h-112.5 w-full items-end bg-linear-to-r from-orange-600 via-red-600 to-purple-700">
-   <div className="absolute inset-0 bg-black/35" />
-
-<div className="relative mx-auto flex w-full max-w-7xl items-end justify-between p-10 text-white">
-
-  <div>
-
-    <span className="rounded-full bg-red-600 px-4 py-2 text-sm font-bold">
-
-      🔴 LIVE NOW
-
-    </span>
-
-    <h1 className="mt-6 text-6xl font-black">
-
-      WEEKLY BR
-
-    </h1>
-
-    <h2 className="text-4xl font-bold">
-
-      CHAMPIONSHIP
-
-    </h2>
-
-    <div className="mt-6 flex gap-3">
-
-      <span className="rounded-full bg-orange-500 px-4 py-2 font-bold">
-
-        ₹10,000
-
-      </span>
-
-      <span className="rounded-full bg-green-600 px-4 py-2 font-bold">
-
-        FREE ENTRY
-
-      </span>
-
-    </div>
-
-  </div>
-
-</div>
-
+    <main className="min-h-screen bg-background">
+      <div className="relative flex h-80 w-full items-end border-b border-border bg-void bg-tactical-grid">
+        <div className="relative mx-auto flex w-full max-w-7xl items-end justify-between px-6 pb-10">
+          <div>
+            <span className="flex w-fit items-center gap-2 border border-ember/40 bg-ember/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-ember">
+              <span className="h-1.5 w-1.5 rounded-full bg-ember animate-pulse-dot" />
+              {scrim.status === "OPEN" ? "Registration Open" : "Closed"}
+            </span>
+            <h1 className="mt-5 font-display text-5xl md:text-6xl font-bold uppercase leading-tight text-foreground">
+              {scrim.title}
+            </h1>
+            <p className="mt-2 font-mono text-sm uppercase tracking-widest text-cyan">
+              {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="mx-auto max-w-7xl p-8">
-
+      <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="grid gap-8 lg:grid-cols-3">
+          <div className="space-y-8 lg:col-span-2">
+            <div className="flex flex-wrap gap-3">
+              <span className="border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
+                {scrim.fee === 0 ? "Free Entry" : `₹${scrim.fee} Entry`}
+              </span>
+              <span className="border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
+                {scrim.maxTeams} Teams
+              </span>
+              <span className="border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
+                {formattedDate} · {scrim.time}
+              </span>
+            </div>
 
-          {/* Left */}
-
-          <div className="lg:col-span-2">
-
-           <div className="flex flex-wrap items-center gap-3">
-
-  <h1 className="text-5xl font-black">
-    Weekly BR Championship
-  </h1>
-
-  <span className="rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white animate-pulse">
-
-    🔴 LIVE
-
-  </span>
-
-</div>
-            <div className="mt-6 flex flex-wrap gap-3">
-
-  <span className="rounded-full bg-orange-100 px-4 py-2 font-bold text-orange-600">
-
-    ₹10,000 Prize Pool
-
-  </span>
-
-  <span className="rounded-full bg-green-100 px-4 py-2 font-bold text-green-600">
-
-    FREE ENTRY
-
-  </span>
-
-  <span className="rounded-full bg-blue-100 px-4 py-2 font-bold text-blue-600">
-
-    Battle Royale
-
-  </span>
-
-</div>
-
-<p className="mt-6 text-lg text-gray-600">
-              India&apos;s biggest weekly Battle Royale custom room.
-              Compete against top teams and win exciting cash prizes.
-            </p>
-
-            <div className="mt-8 rounded-3xl bg-white p-8 shadow">
-
-              <h2 className="mb-6 text-3xl font-bold">
+            <div className="relative border border-border bg-panel p-8">
+              <CornerFrame tone="cyan" show="always" />
+              <h2 className="mb-6 font-display text-2xl font-bold uppercase text-foreground">
                 Tournament Rules
               </h2>
 
-              <ul className="space-y-4 text-gray-700">
-
-                <li>✅ Emulator Players Not Allowed</li>
-
-                <li>✅ Hacks = Permanent Ban</li>
-
-                <li>✅ Room ID released 15 minutes before match</li>
-
-                <li>✅ Be online before match starts</li>
-
-                <li>✅ No teaming</li>
-
-                <li>✅ Respect organizers</li>
-
-                <li>✅ Internet issues are player&apos;s responsibility</li>
-
-                <li>✅ Organizer decision is final</li>
-
-              </ul>
-
-                        </div>
-
-            {/* Registered Teams */}
-
-            <div className="mt-8 rounded-3xl bg-white p-8 shadow">
-
-              <h2 className="mb-6 text-3xl font-bold">
-
-                Registered Teams
-
-              </h2>
-
-              <div className="space-y-3">
-
-                {[
-                  "Team Alpha",
-                  "Team Demon",
-                  "Team Titan",
-                  "Team Hydra",
-                  "Team Inferno",
-                  "Team Ghost",
-                  "Team Phoenix",
-                ].map((team) => (
-
-                  <div
-                    key={team}
-                    className="flex items-center justify-between rounded-xl border p-4"
-                  >
-
-                    <span>{team}</span>
-
-                    <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-600">
-
-                      Registered
-
-                    </span>
-
-                  </div>
-
-                ))}
-
-              </div>
-
+              {rulesList.length > 0 ? (
+                <ul className="space-y-3 font-mono text-sm text-muted-foreground">
+                  {rulesList.map((rule, i) => (
+                    <li key={i} className="flex gap-3">
+                      <ShieldCheck size={16} className="mt-0.5 shrink-0 text-ember" />
+                      {rule}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="font-mono text-sm text-muted-foreground">
+                  Rules will be published soon.
+                </p>
+              )}
             </div>
-
           </div>
 
-          {/* Right */}
-          <div className="mt-8 rounded-3xl bg-white p-8 shadow">
-
-  <h2 className="mb-6 text-3xl font-bold">
-
-    Frequently Asked Questions
-
-  </h2>
-
-  <div className="space-y-5">
-
-    <div>
-
-      <h3 className="font-bold">
-
-        When will Room ID be released?
-
-      </h3>
-
-      <p className="mt-2 text-gray-600">
-
-        15 minutes before the match starts.
-
-      </p>
-
-    </div>
-
-    <div>
-
-      <h3 className="font-bold">
-
-        Are emulator players allowed?
-
-      </h3>
-
-      <p className="mt-2 text-gray-600">
-
-        No.
-
-      </p>
-
-    </div>
-
-    <div>
-
-      <h3 className="font-bold">
-
-        Refund available?
-
-      </h3>
-
-      <p className="mt-2 text-gray-600">
-
-        No refund after successful registration.
-
-      </p>
-
-    </div>
-
-  </div>
-
-</div>
           <div>
-
-            <div className="rounded-3xl bg-white p-6 shadow-lg">
-
-              <h2 className="mb-6 text-2xl font-bold">
+            <div className="border border-border bg-panel p-6">
+              <h2 className="mb-6 font-display text-xl font-bold uppercase text-foreground">
                 Tournament Info
               </h2>
 
-              <div className="space-y-5">
-
+              <div className="space-y-4 font-mono text-sm text-muted-foreground">
                 <div className="flex items-center gap-3">
-
-                  <Trophy />
-
-                  ₹10,000 Prize Pool
-
+                  <Trophy size={18} className="text-amber" />
+                  Prize pool announced soon
                 </div>
-
                 <div className="flex items-center gap-3">
-
-                  <Users />
-
-                  32 / 48 Teams
-
+                  <Users size={18} className="text-cyan" />
+                  {scrim.maxTeams} Teams
                 </div>
-
                 <div className="flex items-center gap-3">
-
-                  <Calendar />
-
-                  28 July 2026
-
+                  <Calendar size={18} className="text-ember" />
+                  {formattedDate}
                 </div>
-
                 <div className="flex items-center gap-3">
-
-                  <Clock />
-
-                  9:00 PM
-
+                  <IndianRupee size={18} className="text-ember" />
+                  {scrim.fee === 0 ? "Free Entry" : `₹${scrim.fee}`}
                 </div>
-
               </div>
 
-        <Link
-  href="/payment"
-  className="mt-8 block w-full rounded-2xl bg-orange-500 py-4 text-center text-lg font-bold text-white transition hover:scale-[1.02] hover:bg-orange-600 active:scale-95"
->
-  Register Now
-</Link>
-
-<div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4">
-
-  <p className="text-sm font-semibold text-orange-600">
-    Registration Ends In
-  </p>
-
-  <h3 className="mt-2 text-3xl font-black text-gray-900">
-    02d 11h 42m
-  </h3>
-
-</div>
-
-<div className="mt-6 rounded-2xl border bg-gray-50 p-4">
-
-  <h3 className="mb-3 font-bold">
-    Prize Distribution
-  </h3>
-
-  <div className="space-y-2">
-
-    <div className="flex justify-between">
-
-      <span>🥇 1st</span>
-
-      <span>₹6000</span>
-
-    </div>
-
-    <div className="flex justify-between">
-
-      <span>🥈 2nd</span>
-
-      <span>₹2500</span>
-
-    </div>
-
-    <div className="flex justify-between">
-
-      <span>🥉 3rd</span>
-
-      <span>₹1500</span>
-
-    </div>
-
-  </div>
-
-</div>
-
+              <Link
+                href={`/scrims/${scrim.id}/register`}
+                className="mt-8 flex w-full items-center justify-center bg-ember py-4 font-display text-lg font-bold uppercase text-void transition hover:bg-[var(--ember-deep)]"
+              >
+                Register Now
+              </Link>
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </main>
   );
 }

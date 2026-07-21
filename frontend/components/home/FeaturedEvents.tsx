@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trophy, Ticket } from "lucide-react";
+import { CornerFrame } from "@/components/ui/CornerFrame";
 
 const slides = [
   {
@@ -29,146 +30,114 @@ const slides = [
 ];
 
 export default function FeaturedEvents() {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: true,
-  });
-
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selected, setSelected] = useState(0);
 
-  const scrollPrev = useCallback(() => {
-    emblaApi?.scrollPrev();
-  }, [emblaApi]);
-
-  const scrollNext = useCallback(() => {
-    emblaApi?.scrollNext();
-  }, [emblaApi]);
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
   useEffect(() => {
     if (!emblaApi) return;
 
-    const onSelect = () => {
-      setSelected(emblaApi.selectedScrollSnap());
-    };
-
+    const onSelect = () => setSelected(emblaApi.selectedScrollSnap());
     emblaApi.on("select", onSelect);
     onSelect();
 
-    const interval = setInterval(() => {
-      emblaApi.scrollNext();
-    }, 5000);
-
+    const interval = setInterval(() => emblaApi.scrollNext(), 5000);
     return () => clearInterval(interval);
   }, [emblaApi]);
 
   return (
-    <section className="mx-auto mt-8 max-w-7xl px-5">
-
-      <div className="mb-5 flex items-center justify-between">
-
-        <div>
-          <h2 className="text-3xl font-bold">
-            🔥 Main Event
-          </h2>
-
-          <p className="text-gray-500">
-            Featured Tournament
-          </p>
+    <section className="relative overflow-hidden bg-tactical-grid bg-hero-glow border-b border-border">
+      <div className="mx-auto max-w-7xl px-5 py-10">
+        <div className="mb-6 flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-ember animate-pulse-dot" />
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-cyan">
+            Main Event · Live
+          </span>
         </div>
 
-      </div>
+        <div className="group relative border border-border bg-panel/80 backdrop-blur">
+          <CornerFrame show="always" tone="ember" />
 
-      <div className="relative overflow-hidden rounded-3xl shadow-xl">
+          <div ref={emblaRef} className="overflow-hidden">
+            <div className="flex">
+              {slides.map((slide) => (
+                <div key={slide.id} className="min-w-full">
+                  <div className="grid lg:grid-cols-2">
+                    <div className="flex flex-col justify-center p-10 lg:p-14">
+                      <span className="w-fit border border-cyan/40 bg-cyan/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-cyan">
+                        {slide.status}
+                      </span>
 
-        <div ref={emblaRef}>
+                      <h1 className="mt-6 font-display text-5xl md:text-6xl font-bold uppercase leading-[1.05] text-foreground">
+                        {slide.title}
+                      </h1>
 
-          <div className="flex">
+                      <div className="mt-8 flex gap-8 font-mono text-sm">
+                        <div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Trophy size={16} className="text-amber" />
+                            Prize Pool
+                          </div>
+                          <p className="mt-1 text-xl font-semibold text-foreground">
+                            {slide.prize}
+                          </p>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Ticket size={16} className="text-ember" />
+                            Entry
+                          </div>
+                          <p className="mt-1 text-xl font-semibold text-foreground">
+                            {slide.entry}
+                          </p>
+                        </div>
+                      </div>
 
-            {slides.map((slide) => (
-
-              <div
-                key={slide.id}
-                className="min-w-full bg-white"
-              >
-
-                <div className="grid lg:grid-cols-2">
-
-                  <div className="flex flex-col justify-center p-10">
-
-                    <span className="w-fit rounded-full bg-orange-100 px-4 py-2 font-semibold text-orange-600">
-                      {slide.status}
-                    </span>
-
-                    <h1 className="mt-5 text-5xl font-black">
-                      {slide.title}
-                    </h1>
-
-                    <div className="mt-8 space-y-3">
-
-                      <p>
-                        🏆 Prize Pool : {slide.prize}
-                      </p>
-
-                      <p>
-                        🎮 Entry : {slide.entry}
-                      </p>
-
+                      <button className="mt-10 w-fit bg-ember px-8 py-3.5 font-display font-bold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-12px)_0,100%_12px,100%_100%,12px_100%,0_calc(100%-12px))]">
+                        View Tournament
+                      </button>
                     </div>
 
-                    <button className="mt-8 w-fit rounded-xl bg-orange-500 px-8 py-3 font-bold text-white hover:bg-orange-600">
-                      View Tournament
-                    </button>
-
+                    <div className="relative hidden min-h-105 items-center justify-center border-l border-border bg-void lg:flex">
+                      <div className="absolute inset-0 bg-tactical-grid opacity-40" />
+                      <span className="relative font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                        Banner Image
+                      </span>
+                    </div>
                   </div>
-
-                  <div className="flex h-105 items-center justify-center bg-gray-200 text-2xl font-bold">
-
-                    Banner Image
-
-                  </div>
-
                 </div>
-
-              </div>
-
-            ))}
-
+              ))}
+            </div>
           </div>
 
+          <button
+            onClick={scrollPrev}
+            className="absolute left-4 top-1/2 -translate-y-1/2 border border-border bg-panel/90 p-2.5 text-foreground transition hover:border-cyan hover:text-cyan"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          <button
+            onClick={scrollNext}
+            className="absolute right-4 top-1/2 -translate-y-1/2 border border-border bg-panel/90 p-2.5 text-foreground transition hover:border-cyan hover:text-cyan"
+          >
+            <ChevronRight size={18} />
+          </button>
+
+          <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-2">
+            {slides.map((_, index) => (
+              <div
+                key={index}
+                className={`h-1 w-8 transition ${
+                  selected === index ? "bg-ember" : "bg-border"
+                }`}
+              />
+            ))}
+          </div>
         </div>
-
-        <button
-          onClick={scrollPrev}
-          className="absolute left-5 top-1/2 -translate-y-1/2 rounded-full bg-white p-3 shadow-lg"
-        >
-          <ChevronLeft />
-        </button>
-
-        <button
-          onClick={scrollNext}
-          className="absolute right-5 top-1/2 -translate-y-1/2 rounded-full bg-white p-3 shadow-lg"
-        >
-          <ChevronRight />
-        </button>
-
-        <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-2">
-
-          {slides.map((_, index) => (
-
-            <div
-              key={index}
-              className={`h-3 w-3 rounded-full ${
-                selected === index
-                  ? "bg-orange-500"
-                  : "bg-gray-300"
-              }`}
-            />
-
-          ))}
-
-        </div>
-
       </div>
-
     </section>
   );
 }

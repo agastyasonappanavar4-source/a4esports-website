@@ -103,12 +103,15 @@ export const getRegistrationById = async (req, res) => {
 };
 export const getRegistrationDetails = async (req, res) => {
     try {
-        const registration = await prisma.registration.findUnique({
-            where: {
-                id: Number(req.params.id),
-            },
-            include: {
-                scrim: true,
+        const registration = await prisma.registration.create({
+            data: {
+                registrationCode,
+                teamName,
+                iglName,
+                phone,
+                slotNumber,
+                scrimId: Number(scrimId),
+                userId: req.user.userId,
             },
         });
 

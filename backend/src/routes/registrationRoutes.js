@@ -4,10 +4,11 @@ import {
     getRegistrationById,
     getRegistrationDetails,
 } from "../controllers/registrationController.js";
+import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", registerTeam);
+router.post("/", verifyToken, registerTeam);
 router.get("/:id", getRegistrationById);
 router.get("/:id/details", getRegistrationDetails);
 
