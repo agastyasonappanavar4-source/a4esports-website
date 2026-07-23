@@ -31,7 +31,7 @@ export default function TournamentCard({
 
   return (
     <Link href={`/scrims/${id}`} className="cursor-pointer">
-      <div className="group relative min-w-77.5 border border-border bg-panel transition-all duration-300 hover:-translate-y-1 hover:border-ember/50">
+      <div className="btn-press group relative min-w-77.5 border border-border bg-panel transition-all duration-300 hover:-translate-y-1 hover:border-ember/50">
         <CornerFrame tone="ember" />
 
         {/* Banner */}
@@ -56,7 +56,7 @@ export default function TournamentCard({
         {/* Card Content */}
         <div className="space-y-4 p-5">
           <div className="grid grid-cols-2 gap-3">
-            <div className="border border-border bg-void/40 p-3">
+            <div className="border border-border bg-panel-2 p-3">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Trophy size={15} className="text-amber" />
                 <span className="font-mono text-[11px] uppercase tracking-widest">
@@ -68,7 +68,7 @@ export default function TournamentCard({
               </p>
             </div>
 
-            <div className="border border-border bg-void/40 p-3">
+            <div className="border border-border bg-panel-2 p-3">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <IndianRupee size={15} className="text-ember" />
                 <span className="font-mono text-[11px] uppercase tracking-widest">
@@ -97,7 +97,7 @@ export default function TournamentCard({
               <span>Slots Filled</span>
               <span>{maxTeams}</span>
             </div>
-            <div className="h-1.5 overflow-hidden bg-void">
+            <div className="h-1.5 overflow-hidden bg-panel-2">
               <div className="h-full w-2/3 bg-ember transition-all duration-500 group-hover:w-[70%]" />
             </div>
           </div>

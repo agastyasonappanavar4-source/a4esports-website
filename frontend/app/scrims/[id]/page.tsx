@@ -28,7 +28,8 @@ export default async function TournamentPage({
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="relative flex h-80 w-full items-end border-b border-border bg-void bg-tactical-grid">
+      <div className="relative flex h-80 w-full items-end overflow-hidden border-b border-border bg-void bg-tactical-grid">
+        <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/10 to-transparent" />
         <div className="relative mx-auto flex w-full max-w-7xl items-end justify-between px-6 pb-10">
           <div>
             <span className="flex w-fit items-center gap-2 border border-ember/40 bg-ember/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-ember">

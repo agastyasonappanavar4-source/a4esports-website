@@ -99,11 +99,44 @@
   --sidebar-accent-foreground: #eceef1;
   --sidebar-border: #262c33;
   --sidebar-ring: var(--ember);
+  --grid-line: rgba(255, 255, 255, 0.045);
 }
 
 .dark {
   --background: var(--void);
   --foreground: #eceef1;
+}
+.light {
+  --panel: #ffffff;
+  --panel-2: #eef0f3;
+  --border: #d9dee4;
+  --foreground: #14181d;
+  --muted-foreground: #565c64;
+
+  --background: #f1f3f6;
+  --card: var(--panel);
+  --card-foreground: var(--foreground);
+  --popover: var(--panel);
+  --popover-foreground: var(--foreground);
+  --secondary: var(--panel-2);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--panel-2);
+  --input: var(--border);
+
+  --tac-cyan: #0d9488;
+  --grid-line: rgba(11, 13, 16, 0.05);
+
+  --sidebar: var(--panel);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-accent: var(--panel-2);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+}
+
+.light .bg-panel {
+  box-shadow:
+    0 1px 2px rgba(20, 24, 29, 0.05),
+    0 10px 24px rgba(20, 24, 29, 0.06);
 }
 
 @layer base {
@@ -142,10 +175,10 @@
   }
 
   /* faint tactical grid texture, used on hero / dark section backgrounds */
-  .bg-tactical-grid {
+ .bg-tactical-grid {
     background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
     background-size: 44px 44px;
   }
 
@@ -153,6 +186,28 @@
     background:
       radial-gradient(60% 50% at 15% 20%, rgba(255, 90, 31, 0.16), transparent 60%),
       radial-gradient(50% 45% at 85% 75%, rgba(47, 230, 214, 0.12), transparent 60%);
+  }
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+  .animate-shimmer {
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-toast-in {
+    animation: toast-in 250ms ease-out;
+  }
+
+  .btn-press {
+    transition: transform 150ms ease;
+  }
+  .btn-press:active {
+    transform: scale(0.96);
   }
 
   @keyframes marquee {

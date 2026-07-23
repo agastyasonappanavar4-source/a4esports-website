@@ -43,7 +43,7 @@ export const registerTeam = async (req, res) => {
         const slotNumber = totalRegistrations + 1;
 
         const registrationCode =
-            `${scrim.mode}${String(slotNumber).padStart(6, "0")}`;
+            `${scrim.mode}${scrim.id}-${String(slotNumber).padStart(4, "0")}`;
 
         const registration = await prisma.registration.create({
             data: {
@@ -53,6 +53,7 @@ export const registerTeam = async (req, res) => {
                 phone,
                 slotNumber,
                 scrimId: Number(scrimId),
+                userId: req.user.userId,
             },
         });
 
@@ -101,17 +102,15 @@ export const getRegistrationById = async (req, res) => {
         });
     }
 };
+
 export const getRegistrationDetails = async (req, res) => {
     try {
-        const registration = await prisma.registration.create({
-            data: {
-                registrationCode,
-                teamName,
-                iglName,
-                phone,
-                slotNumber,
-                scrimId: Number(scrimId),
-                userId: req.user.userId,
+        const registration = await prisma.registration.findUnique({
+            where: {
+                id: Number(req.params.id),
+            },
+            include: {
+                scrim: true,
             },
         });
 
@@ -152,6 +151,27 @@ export const getRegistrationDetails = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch registration details",
+        });
+    }
+};
+export const getMyRegistrations = async (req, res) => {
+    try {
+        const registrations = await prisma.registration.findMany({
+            where: { userId: req.user.userId },
+            include: { scrim: true },
+            orderBy: { createdAt: "desc" },
+        });
+
+        res.json({
+            success: true,
+            data: registrations,
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch your registrations",
         });
     }
 };

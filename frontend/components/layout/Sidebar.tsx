@@ -11,7 +11,9 @@ import {
   Phone,
   X,
   LogIn,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SidebarProps {
   open: boolean;
@@ -19,14 +21,16 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
+  const { user, logout } = useAuth();
+
   const menuItems = [
     { icon: Home, title: "Home", href: "/" },
-    { icon: Trophy, title: "Tournaments", href: "/" },
-    { icon: Bell, title: "Notifications", href: "/" },
-    { icon: User, title: "My Profile", href: "/" },
+    { icon: Trophy, title: "Tournaments", href: "/#scrims" },
+    { icon: Bell, title: "Notifications", href: "/notifications" },
+    { icon: User, title: "My Profile", href: "/profile" },
     { icon: ScrollText, title: "Rules", href: "/rules" },
-    { icon: Phone, title: "Contact Us", href: "/" },
-    { icon: Settings, title: "Settings", href: "/" },
+    { icon: Phone, title: "Contact Us", href: "/contact" },
+    { icon: Settings, title: "Settings", href: "/settings" },
   ];
 
   return (
@@ -66,6 +70,17 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               <X />
             </button>
           </div>
+
+          {user && (
+            <div className="mt-5 border border-border bg-panel-2 p-3">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                Signed in as
+              </p>
+              <p className="mt-1 font-display font-semibold text-foreground">
+                {user.username}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mt-4 flex flex-col">
@@ -83,14 +98,27 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <div className="absolute bottom-6 left-6 right-6">
-          <Link
-            href="/login"
-            onClick={onClose}
-            className="flex items-center justify-center gap-3 bg-ember py-3.5 font-display font-bold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,10px_100%,0_calc(100%-10px))]"
-          >
-            <LogIn size={19} />
-            Login / Register
-          </Link>
+          {user ? (
+            <button
+              onClick={() => {
+                logout();
+                onClose();
+              }}
+              className="flex w-full items-center justify-center gap-3 border border-destructive/40 bg-destructive/10 py-3.5 font-display font-bold uppercase tracking-wide text-destructive transition hover:bg-destructive/20"
+            >
+              <LogOut size={19} />
+              Logout
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              onClick={onClose}
+              className="flex items-center justify-center gap-3 bg-ember py-3.5 font-display font-bold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,10px_100%,0_calc(100%-10px))]"
+            >
+              <LogIn size={19} />
+              Login / Register
+            </Link>
+          )}
         </div>
       </aside>
     </>

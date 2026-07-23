@@ -3,11 +3,11 @@ import {
     createOrder,
     verifyPayment,
 } from "../controllers/paymentController.js";
+import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/create-order", createOrder);
-
-router.post("/verify-payment", verifyPayment);
+router.post("/create-order", verifyToken, createOrder);
+router.post("/verify-payment", verifyToken, verifyPayment);
 
 export default router;

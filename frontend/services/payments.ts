@@ -1,11 +1,11 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function createOrder(amount: number) {
+export async function createOrder(scrimId: number) {
   const response = await fetch(`${API_URL}/api/payments/create-order`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount }),
+    body: JSON.stringify({ scrimId }),
   });
 
   const data = await response.json();

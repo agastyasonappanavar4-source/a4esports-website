@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Sidebar from "./Sidebar";
-import { Menu, Search, User, LogOut } from "lucide-react";
+import { Menu, Search, User, LogOut, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/context/ThemeContext";
 
 const TICKER = [
   "WEEKLY BR CHAMPIONSHIP · REG OPEN",
@@ -16,6 +17,7 @@ const TICKER = [
 export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleBrowseClick = () => {
     const section = document.getElementById("scrims");
@@ -28,9 +30,8 @@ export default function Navbar() {
     <>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <header className="sticky top-0 z-50 border-b border-border bg-void/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-border bg-panel/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          {/* LEFT */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -55,7 +56,6 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* SEARCH */}
           <div className="hidden w-full max-w-xl px-10 lg:block">
             <div className="flex items-center border border-border bg-panel px-4 py-2.5 transition focus-within:border-cyan">
               <Search size={16} className="text-muted-foreground" />
@@ -66,18 +66,25 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* RIGHT */}
           <div className="flex items-center gap-3">
             <button
               onClick={handleBrowseClick}
-              className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground transition hover:text-cyan"
+              className="hidden font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground transition hover:text-cyan sm:block"
             >
               Browse
             </button>
 
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="border border-border p-2.5 text-muted-foreground transition hover:border-cyan hover:text-cyan"
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
             {user ? (
               <>
-                <div className="flex items-center gap-2 border border-border px-4 py-2">
+                <div className="hidden items-center gap-2 border border-border px-4 py-2 sm:flex">
                   <User size={16} className="text-cyan" />
                   <span className="font-mono text-sm text-foreground">
                     {user.username}
@@ -89,7 +96,7 @@ export default function Navbar() {
                   className="flex items-center gap-2 border border-destructive/40 bg-destructive/10 px-4 py-2 font-display text-sm font-semibold uppercase text-destructive transition hover:bg-destructive/20"
                 >
                   <LogOut size={16} />
-                  Logout
+                  <span className="hidden sm:inline">Logout</span>
                 </button>
               </>
             ) : (

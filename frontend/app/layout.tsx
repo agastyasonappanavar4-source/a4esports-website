@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Rajdhani, Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { ToastProvider } from "@/context/ToastContext";
 import "./globals.css";
 
 const display = Rajdhani({
@@ -35,10 +37,28 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${sans.variable} ${mono.variable} dark h-full antialiased`}
+      className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var t = localStorage.getItem('ffs-theme');
+                if (t === 'light') {
+                  document.documentElement.classList.add('light');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </ThemeProvider>
+        </AuthProvider>
         <Script
           src="https://checkout.razorpay.com/v1/checkout.js"
           strategy="afterInteractive"

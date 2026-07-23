@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ShieldCheck, Users, Phone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/context/ToastContext";
 import { getScrimById, type Scrim } from "@/lib/scrims";
 import { createOrder, verifyPayment } from "@/services/payments";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 declare global {
   interface Window {
-    Razorpay: new (options: Record<string, unknown>) => {
-      open: () => void;
-    };
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
   }
 }
 
@@ -27,14 +27,14 @@ export default function ScrimRegisterPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
 
   const [scrim, setScrim] = useState<Scrim | null>(null);
   const [teamName, setTeamName] = useState("");
   const [iglName, setIglName] = useState("");
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState<{ code: string } | null>(null);
-  const [error, setError] = useState("");
+  const [criticalError, setCriticalError] = useState("");
 
   useEffect(() => {
     getScrimById(Number(id)).then(setScrim);
@@ -46,14 +46,18 @@ export default function ScrimRegisterPage() {
     }
   }, [authLoading, user, id, router]);
 
+  const goHomeRegistered = () => {
+    showToast("You're registered! Check the home page for match details.", "success");
+    setTimeout(() => router.push("/"), 900);
+  };
+
   const handleSubmit = async () => {
     if (!teamName || !iglName || !phone) {
-      setError("Please fill all fields.");
+      showToast("Please fill all fields.", "error");
       return;
     }
     if (!scrim) return;
 
-    setError("");
     setSubmitting(true);
 
     try {
@@ -61,12 +65,7 @@ export default function ScrimRegisterPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scrimId: scrim.id,
-          teamName,
-          iglName,
-          phone,
-        }),
+        body: JSON.stringify({ scrimId: scrim.id, teamName, iglName, phone }),
       });
 
       const regData = await regResponse.json();
@@ -78,11 +77,11 @@ export default function ScrimRegisterPage() {
       const registration = regData.data;
 
       if (scrim.fee === 0) {
-        setSuccess({ code: registration.registrationCode });
+        goHomeRegistered();
         return;
       }
 
-      const order = await createOrder(scrim.fee);
+      const order = await createOrder(scrim.id);
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -101,9 +100,9 @@ export default function ScrimRegisterPage() {
               amount: scrim.fee,
               method: "razorpay",
             });
-            setSuccess({ code: registration.registrationCode });
+            goHomeRegistered();
           } catch {
-            setError(
+            setCriticalError(
               `Payment verification failed. Contact support with your registration code: ${registration.registrationCode}`
             );
           }
@@ -114,7 +113,7 @@ export default function ScrimRegisterPage() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      showToast(err instanceof Error ? err.message : "Something went wrong.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -122,39 +121,19 @@ export default function ScrimRegisterPage() {
 
   if (!scrim) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background">
-        <p className="font-mono text-sm text-muted-foreground">
-          Loading tournament...
-        </p>
-      </main>
-    );
-  }
-
-  if (success) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-5">
-        <div className="w-full max-w-md border border-cyan/40 bg-panel p-8 text-center">
-          <ShieldCheck className="mx-auto mb-4 h-14 w-14 text-cyan" />
-          <h1 className="font-display text-3xl font-bold uppercase text-foreground">
-            You&apos;re In
-          </h1>
-          <p className="mt-3 font-mono text-sm text-muted-foreground">
-            Registration confirmed for {scrim.title}.
-          </p>
-          <div className="mt-6 border border-border bg-void p-4">
-            <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-              Registration Code
-            </p>
-            <p className="mt-1 font-mono text-2xl font-semibold text-ember">
-              {success.code}
-            </p>
+      <main className="min-h-screen bg-background bg-tactical-grid">
+        <div className="mx-auto max-w-2xl px-6 py-12">
+          <Skeleton className="mb-8 h-10 w-24" />
+          <div className="border border-border bg-panel p-8">
+            <Skeleton className="h-3 w-40" />
+            <Skeleton className="mt-3 h-10 w-3/4" />
+            <div className="mt-10 space-y-6">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
           </div>
-          <button
-            onClick={() => router.push(`/scrims/${scrim.id}`)}
-            className="mt-8 w-full bg-ember py-3.5 font-display font-bold uppercase text-void transition hover:bg-[var(--ember-deep)]"
-          >
-            Back to Tournament
-          </button>
         </div>
       </main>
     );
@@ -175,43 +154,35 @@ export default function ScrimRegisterPage() {
           <span className="font-mono text-xs uppercase tracking-widest text-cyan">
             {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · Registration
           </span>
-          <h1 className="mt-2 font-display text-4xl font-bold uppercase text-foreground">
-            {scrim.title}
-          </h1>
+          <h1 className="mt-2 font-display text-4xl font-bold uppercase text-foreground">{scrim.title}</h1>
           <p className="mt-3 font-mono text-sm text-muted-foreground">
-            Fill your team details to secure a slot.
+            Fill your team details to secure a slot. After confirming, you&apos;ll be taken back to the home page where your match will appear.
           </p>
 
           <div className="mt-10 space-y-6">
             <div>
-              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Team Name
-              </label>
+              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">Team Name</label>
               <input
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
                 placeholder="Enter team name"
-                className="w-full border border-border bg-void p-4 font-mono text-foreground outline-none focus:border-cyan"
+                className="w-full border border-border bg-panel-2 p-4 font-mono text-foreground outline-none focus:border-cyan"
               />
             </div>
 
             <div>
-              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                IGL Name
-              </label>
+              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">IGL Name</label>
               <input
                 value={iglName}
                 onChange={(e) => setIglName(e.target.value)}
                 placeholder="Enter IGL name"
-                className="w-full border border-border bg-void p-4 font-mono text-foreground outline-none focus:border-cyan"
+                className="w-full border border-border bg-panel-2 p-4 font-mono text-foreground outline-none focus:border-cyan"
               />
             </div>
 
             <div>
-              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Phone Number
-              </label>
-              <div className="flex items-center border border-border bg-void px-4 focus-within:border-cyan">
+              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">Phone Number</label>
+              <div className="flex items-center border border-border bg-panel-2 px-4 focus-within:border-cyan">
                 <Phone size={16} className="text-muted-foreground" />
                 <input
                   value={phone}
@@ -222,7 +193,7 @@ export default function ScrimRegisterPage() {
               </div>
             </div>
 
-            <div className="border border-border bg-void/60 p-5">
+            <div className="border border-border bg-panel-2 p-5">
               <div className="flex items-center gap-3 font-mono text-sm text-muted-foreground">
                 <Users size={18} className="text-cyan" />
                 Max 4 players per team
@@ -233,22 +204,18 @@ export default function ScrimRegisterPage() {
               </div>
             </div>
 
-            {error && (
+            {criticalError && (
               <p className="border border-destructive/40 bg-destructive/10 p-3 font-mono text-sm text-destructive">
-                {error}
+                {criticalError}
               </p>
             )}
 
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="w-full bg-ember py-4 font-display text-lg font-bold uppercase text-void transition hover:bg-[var(--ember-deep)] disabled:opacity-50"
+              className="btn-press w-full bg-ember py-4 font-display text-lg font-bold uppercase text-void transition hover:bg-[var(--ember-deep)] disabled:opacity-50"
             >
-              {submitting
-                ? "Processing..."
-                : scrim.fee === 0
-                ? "Confirm Free Entry"
-                : `Pay ₹${scrim.fee} & Register`}
+              {submitting ? "Processing..." : scrim.fee === 0 ? "Confirm Free Entry" : `Pay ₹${scrim.fee} & Register`}
             </button>
           </div>
         </div>
