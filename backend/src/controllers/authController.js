@@ -44,9 +44,9 @@ export const signup = async (req, res) => {
                 id: user.id,
                 username: user.username,
                 email: user.email,
+                isAdmin: user.isAdmin,
             },
         });
-
     } catch (error) {
         console.error(error);
 
@@ -70,9 +70,7 @@ export const login = async (req, res) => {
         }
 
         const user = await prisma.user.findUnique({
-            where: {
-                email,
-            },
+            where: { email },
         });
 
         if (!user) {
@@ -82,10 +80,7 @@ export const login = async (req, res) => {
             });
         }
 
-        const passwordMatch = await bcrypt.compare(
-            password,
-            user.password
-        );
+        const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {
             return res.status(401).json({
@@ -97,11 +92,10 @@ export const login = async (req, res) => {
         const token = jwt.sign(
             {
                 userId: user.id,
+                isAdmin: user.isAdmin,
             },
             process.env.JWT_SECRET,
-            {
-                expiresIn: "7d",
-            }
+            { expiresIn: "7d" }
         );
 
         res.cookie("token", token, {
@@ -118,9 +112,9 @@ export const login = async (req, res) => {
                 id: user.id,
                 username: user.username,
                 email: user.email,
+                isAdmin: user.isAdmin,
             },
         });
-
     } catch (error) {
         console.error(error);
 
@@ -145,13 +139,12 @@ export const logout = (req, res) => {
 export const getCurrentUser = async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
-            where: {
-                id: req.user.userId,
-            },
+            where: { id: req.user.userId },
             select: {
                 id: true,
                 username: true,
                 email: true,
+                isAdmin: true,
                 createdAt: true,
             },
         });
@@ -163,11 +156,7 @@ export const getCurrentUser = async (req, res) => {
             });
         }
 
-        res.json({
-            success: true,
-            user,
-        });
-
+        res.json({ success: true, user });
     } catch (error) {
         console.error(error);
 
@@ -177,7 +166,8 @@ export const getCurrentUser = async (req, res) => {
         });
     }
 };
-// Get Current User
+
+// Get Current User (unused directly by routes, kept for compatibility)
 export const getMe = async (req, res) => {
     try {
         const token = req.cookies.token;
@@ -192,13 +182,12 @@ export const getMe = async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         const user = await prisma.user.findUnique({
-            where: {
-                id: decoded.userId,
-            },
+            where: { id: decoded.userId },
             select: {
                 id: true,
                 username: true,
                 email: true,
+                isAdmin: true,
             },
         });
 
@@ -209,11 +198,7 @@ export const getMe = async (req, res) => {
             });
         }
 
-        res.json({
-            success: true,
-            user,
-        });
-
+        res.json({ success: true, user });
     } catch (error) {
         console.error(error);
 

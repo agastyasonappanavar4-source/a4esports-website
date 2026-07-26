@@ -175,3 +175,39 @@ export const getMyRegistrations = async (req, res) => {
         });
     }
 };
+// chatgpt
+export const getRegistrationsByScrim = async (req, res) => {
+    try {
+        const scrimId = Number(req.params.scrimId);
+
+        const registrations = await prisma.registration.findMany({
+            where: {
+                scrimId,
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        email: true,
+                    },
+                },
+            },
+            orderBy: {
+                slotNumber: "asc",
+            },
+        });
+
+        res.status(200).json({
+            success: true,
+            data: registrations,
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch registrations",
+        });
+    }
+};

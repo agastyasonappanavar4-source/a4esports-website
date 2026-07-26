@@ -12,6 +12,7 @@ import {
   X,
   LogIn,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -23,7 +24,7 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
 
-  const menuItems = [
+const menuItems = [
     { icon: Home, title: "Home", href: "/" },
     { icon: Trophy, title: "Tournaments", href: "/#scrims" },
     { icon: Bell, title: "Notifications", href: "/notifications" },
@@ -31,6 +32,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     { icon: ScrollText, title: "Rules", href: "/rules" },
     { icon: Phone, title: "Contact Us", href: "/contact" },
     { icon: Settings, title: "Settings", href: "/settings" },
+    ...(user?.isAdmin
+      ? [{ icon: ShieldCheck, title: "Admin", href: "/admin" }]
+      : []),
   ];
 
   return (

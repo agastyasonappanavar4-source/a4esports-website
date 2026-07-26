@@ -13,6 +13,7 @@ interface AuthUser {
   id: number;
   username: string;
   email: string;
+  isAdmin: boolean;
 }
 
 interface AuthContextValue {

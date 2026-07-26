@@ -1,268 +1,215 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  CalendarDays,
-  IndianRupee,
-  Gamepad2,
-  Plus,
-  ShieldCheck,
-  Swords,
-  Trophy,
   Users,
+  Trophy,
+  Unlock,
+  ClipboardList,
+  IndianRupee,
+  Plus,
+  Pencil,
+  Trash2,
+  Power,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/context/ToastContext";
+import { getScrims, type Scrim } from "@/lib/scrims";
+import {
+  getDashboardStats,
+  deleteScrimRequest,
+  updateScrimStatusRequest,
+  type DashboardStats,
+} from "@/services/admin";
+import { Skeleton } from "@/components/ui/Skeleton";
 
-const stats = [
-  {
-    title: "Total Scrims",
-    value: "12",
-    icon: Swords,
-    description: "All created tournaments",
-  },
-  {
-    title: "Open Scrims",
-    value: "7",
-    icon: Gamepad2,
-    description: "Currently accepting teams",
-  },
-  {
-    title: "Registrations",
-    value: "184",
-    icon: Users,
-    description: "Teams registered overall",
-  },
-  {
-    title: "Revenue",
-    value: "₹8,420",
-    icon: IndianRupee,
-    description: "From successful payments",
-  },
-];
+export default function AdminDashboardPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
 
-const quickActions = [
-  {
-    title: "Create New Scrim",
-    description: "Add a BR or CS tournament",
-    href: "/admin/scrims/create",
-    icon: Plus,
-  },
-  {
-    title: "Manage Scrims",
-    description: "Edit, close or release rooms",
-    href: "/admin/scrims",
-    icon: Trophy,
-  },
-  {
-    title: "View Registrations",
-    description: "See teams and payment status",
-    href: "/admin/registrations",
-    icon: Users,
-  },
-];
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [scrims, setScrims] = useState<Scrim[] | null>(null);
 
-export default function AdminPage() {
+  useEffect(() => {
+    if (!authLoading && (!user || !user.isAdmin)) {
+      router.push("/");
+    }
+  }, [authLoading, user, router]);
+
+  const load = () => {
+    getDashboardStats().then(setStats).catch(() => setStats(null));
+    getScrims().then(setScrims).catch(() => setScrims([]));
+  };
+
+  useEffect(() => {
+    if (user?.isAdmin) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const handleToggleStatus = async (scrim: Scrim) => {
+    const next = scrim.status === "OPEN" ? "CLOSED" : "OPEN";
+    try {
+      await updateScrimStatusRequest(scrim.id, next);
+      showToast(`${scrim.title} is now ${next}.`, "success");
+      load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to update status", "error");
+    }
+  };
+
+  const handleDelete = async (scrim: Scrim) => {
+    if (!confirm(`Delete "${scrim.title}"? This cannot be undone.`)) return;
+
+    try {
+      await deleteScrimRequest(scrim.id);
+      showToast("Tournament deleted.", "success");
+      load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to delete", "error");
+    }
+  };
+
+  if (!user || !user.isAdmin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <p className="font-mono text-sm text-muted-foreground">Checking access...</p>
+      </main>
+    );
+  }
+
+  const statCards = stats
+    ? [
+        { icon: Users, label: "Users", value: stats.totalUsers, tone: "text-cyan" },
+        { icon: Trophy, label: "Tournaments", value: stats.totalScrims, tone: "text-amber" },
+        { icon: Unlock, label: "Open Now", value: stats.openScrims, tone: "text-ember" },
+        { icon: ClipboardList, label: "Registrations", value: stats.totalRegistrations, tone: "text-cyan" },
+        { icon: IndianRupee, label: "Revenue Collected", value: `₹${stats.totalRevenue}`, tone: "text-amber" },
+      ]
+    : [];
+
   return (
-    <main className="min-h-screen bg-[#070707] px-4 pb-24 pt-24 text-white sm:px-6 lg:px-10">
-      <div className="mx-auto max-w-7xl">
-        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
-          <div className="absolute right-0 top-0 h-52 w-52 rounded-full bg-red-700/20 blur-3xl" />
-          <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-yellow-500/10 blur-3xl" />
+    <main className="min-h-screen bg-background bg-tactical-grid">
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span className="font-mono text-xs uppercase tracking-widest text-cyan">
+              Admin
+            </span>
+            <h1 className="mt-1 font-display text-4xl font-bold uppercase text-foreground">
+              Dashboard
+            </h1>
+          </div>
 
-          <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.25em] text-yellow-500">
-                <ShieldCheck className="h-4 w-4" />
-                A4 Esports Control Panel
+          <Link
+            href="/admin/scrims/new"
+            className="flex items-center gap-2 bg-ember px-6 py-3 font-display font-bold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,10px_100%,0_calc(100%-10px))]"
+          >
+            <Plus size={18} />
+            New Tournament
+          </Link>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {stats ? (
+            statCards.map((card) => (
+              <div key={card.label} className="border border-border bg-panel p-6">
+                <card.icon className={`mb-3 h-6 w-6 ${card.tone}`} />
+                <p className="font-mono text-2xl font-semibold text-foreground">{card.value}</p>
+                <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                  {card.label}
+                </p>
               </div>
+            ))
+          ) : (
+            <>
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-28 w-full" />
+            </>
+          )}
+        </div>
 
-              <h1 className="text-3xl font-black uppercase tracking-tight sm:text-5xl">
-                Admin Dashboard
-              </h1>
+        <div className="mt-10">
+          <h2 className="mb-5 font-display text-xl font-bold uppercase text-foreground">
+            All Tournaments
+          </h2>
 
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">
-                Create tournaments, manage registrations, release room
-                credentials and monitor scrim activity.
-              </p>
-            </div>
-
-            <Link
-              href="/admin/scrims/create"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-bold transition hover:bg-red-500"
-            >
-              <Plus className="h-5 w-5" />
-              Create Scrim
-            </Link>
-          </div>
-        </section>
-
-        <section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-
-            return (
-              <article
-                key={stat.title}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"
-              >
-                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-red-600/15 text-red-500">
-                  <Icon className="h-5 w-5" />
-                </div>
-
-                <p className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                  {stat.title}
-                </p>
-
-                <p className="mt-1 text-2xl font-black sm:text-3xl">
-                  {stat.value}
-                </p>
-
-                <p className="mt-2 hidden text-xs text-white/40 sm:block">
-                  {stat.description}
-                </p>
-              </article>
-            );
-          })}
-        </section>
-
-        <section className="mt-8">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-red-500">
-                Administration
-              </p>
-
-              <h2 className="mt-1 text-2xl font-black uppercase">
-                Quick Actions
-              </h2>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-
-              return (
-                <Link
-                  key={action.title}
-                  href={action.href}
-                  className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:-translate-y-1 hover:border-red-500/40 hover:bg-white/[0.05]"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-yellow-500 transition group-hover:bg-red-600 group-hover:text-white">
-                      <Icon className="h-5 w-5" />
-                    </div>
-
-                    <span className="text-xl text-white/30 transition group-hover:translate-x-1 group-hover:text-white">
-                      →
-                    </span>
-                  </div>
-
-                  <h3 className="mt-6 text-lg font-black uppercase">
-                    {action.title}
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-white/45">
-                    {action.description}
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="mt-8 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-500">
-                  Recent activity
-                </p>
-                <h2 className="mt-1 text-xl font-black uppercase">
-                  Latest Scrims
-                </h2>
-              </div>
-
-              <Link
-                href="/admin/scrims"
-                className="text-sm font-semibold text-red-500 hover:text-red-400"
-              >
-                View all
-              </Link>
-            </div>
-
+          {!scrims ? (
             <div className="space-y-3">
-              {[
-                {
-                  name: "BR Evening Scrim",
-                  date: "24 July, 7:00 PM",
-                  teams: "32 / 48",
-                  status: "OPEN",
-                },
-                {
-                  name: "CS Night Clash",
-                  date: "24 July, 9:00 PM",
-                  teams: "18 / 24",
-                  status: "OPEN",
-                },
-                {
-                  name: "BR Pro League",
-                  date: "23 July, 8:00 PM",
-                  teams: "48 / 48",
-                  status: "CLOSED",
-                },
-              ].map((scrim) => (
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : scrims.length === 0 ? (
+            <p className="border border-dashed border-border p-10 text-center font-mono text-sm text-muted-foreground">
+              No tournaments yet. Create your first one.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {scrims.map((scrim) => (
                 <div
-                  key={scrim.name}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-black/30 p-4"
+                  key={scrim.id}
+                  className="flex flex-col gap-4 border border-border bg-panel p-5 md:flex-row md:items-center md:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-bold">{scrim.name}</p>
-
-                    <div className="mt-1 flex items-center gap-2 text-xs text-white/40">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {scrim.date}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`font-mono text-xs uppercase tracking-widest ${
+                          scrim.status === "OPEN" ? "text-cyan" : "text-muted-foreground"
+                        }`}
+                      >
+                        {scrim.status}
+                      </span>
+                      <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                        · {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
+                      </span>
+                      {scrim.roomReleased && (
+                        <span className="font-mono text-xs uppercase tracking-widest text-amber">
+                          · Room Released
+                        </span>
+                      )}
                     </div>
+                    <h3 className="mt-1 truncate font-display text-lg font-bold uppercase text-foreground">
+                      {scrim.title}
+                    </h3>
+                    <p className="mt-1 font-mono text-xs text-muted-foreground">
+                      {scrim._count?.registrations ?? 0} / {scrim.maxTeams} teams ·{" "}
+                      {scrim.fee === 0 ? "Free" : `₹${scrim.fee}`}
+                    </p>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-sm font-bold">{scrim.teams}</p>
-
-                    <p
-                      className={`mt-1 text-xs font-bold ${
-                        scrim.status === "OPEN"
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }`}
+                  <div className="flex shrink-0 gap-2">
+                    <Link
+                      href={`/admin/scrims/${scrim.id}`}
+                      className="flex items-center gap-2 border border-border px-4 py-2 font-mono text-sm text-foreground transition hover:border-cyan hover:text-cyan"
                     >
-                      {scrim.status}
-                    </p>
+                      <Pencil size={15} />
+                      Manage
+                    </Link>
+                    <button
+                      onClick={() => handleToggleStatus(scrim)}
+                      className="flex items-center gap-2 border border-border px-4 py-2 font-mono text-sm text-foreground transition hover:border-amber hover:text-amber"
+                    >
+                      <Power size={15} />
+                      {scrim.status === "OPEN" ? "Close" : "Open"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(scrim)}
+                      className="flex items-center gap-2 border border-destructive/40 bg-destructive/10 px-4 py-2 font-mono text-sm text-destructive transition hover:bg-destructive/20"
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-red-950/50 to-black p-5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-600 text-white">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-
-            <h2 className="mt-6 text-2xl font-black uppercase">
-              Admin Access
-            </h2>
-
-            <p className="mt-3 text-sm leading-6 text-white/50">
-              This dashboard currently has no admin authentication. Before
-              deployment, we must protect all admin routes so regular users
-              cannot access them.
-            </p>
-
-            <div className="mt-6 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-sm text-yellow-200/80">
-              Next priority: connect real scrim data and add protected admin
-              login.
-            </div>
-          </div>
-        </section>
+          )}
+        </div>
       </div>
     </main>
   );

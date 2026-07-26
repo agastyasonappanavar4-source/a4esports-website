@@ -11,6 +11,10 @@ export interface Scrim {
   image: string;
   rules: string;
   status: string;
+  roomId?: string | null;
+  roomPassword?: string | null;
+  roomReleased?: boolean;
+  _count?: { registrations: number };
 }
 
 export async function getScrims(): Promise<Scrim[]> {
@@ -18,9 +22,7 @@ export async function getScrims(): Promise<Scrim[]> {
   return response.data;
 }
 
-export async function getScrimById(
-  id: number
-): Promise<Scrim | null> {
+export async function getScrimById(id: number): Promise<Scrim | null> {
   try {
     const response = await apiRequest(`/api/scrims/${id}`);
     return response.data;
