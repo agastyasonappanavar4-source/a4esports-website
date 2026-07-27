@@ -1,4 +1,17 @@
 import { apiRequest } from "./api";
+import type { SlotTime } from "./slotTime";
+
+export interface Slot {
+  id: number;
+  time: SlotTime;
+  status: "OPEN" | "CLOSED";
+  maxTeams: number | null;
+  roomId?: string | null;
+  roomPassword?: string | null;
+  roomReleased?: boolean;
+  scrimId: number;
+  _count?: { registrations: number };
+}
 
 export interface Scrim {
   id: number;
@@ -7,13 +20,10 @@ export interface Scrim {
   fee: number;
   maxTeams: number;
   date: string;
-  time: string;
   image: string;
   rules: string;
   status: string;
-  roomId?: string | null;
-  roomPassword?: string | null;
-  roomReleased?: boolean;
+  slots: Slot[];
   _count?: { registrations: number };
 }
 

@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Trophy, Ticket } from "lucide-react";
 import { CornerFrame } from "@/components/ui/CornerFrame";
 import { Reveal } from "@/components/ui/Reveal";
 import type { Scrim } from "@/lib/scrims";
+import { slotTimeLabel } from "@/lib/slotTime";
 
 export default function FeaturedEvents({ scrims }: { scrims: Scrim[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
@@ -52,6 +53,11 @@ export default function FeaturedEvents({ scrims }: { scrims: Scrim[] }) {
                     month: "short",
                   });
 
+                  const openSlotLabels = scrim.slots
+                    .filter((s) => s.status === "OPEN")
+                    .map((s) => slotTimeLabel(s.time))
+                    .join(", ");
+
                   return (
                     <div key={scrim.id} className="min-w-full">
                       <Link href={`/scrims/${scrim.id}`} className="grid cursor-pointer lg:grid-cols-2">
@@ -65,7 +71,8 @@ export default function FeaturedEvents({ scrims }: { scrims: Scrim[] }) {
                           </h1>
 
                           <p className="mt-2 font-mono text-sm uppercase tracking-widest text-muted-foreground">
-                            {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · {formattedDate} · {scrim.time}
+                            {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · {formattedDate}
+                            {openSlotLabels && ` · ${openSlotLabels}`}
                           </p>
 
                           <div className="mt-8 flex gap-8 font-mono text-sm">

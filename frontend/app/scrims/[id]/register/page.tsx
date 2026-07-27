@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ShieldCheck, Users, Phone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
-import { getScrimById, type Scrim } from "@/lib/scrims";
+import { getScrimById, type Scrim, type Slot } from "@/lib/scrims";
+import { slotTimeLabel } from "@/lib/slotTime";
 import { createOrder, verifyPayment } from "@/services/payments";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -23,13 +24,17 @@ interface RazorpaySuccessResponse {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export default function ScrimRegisterPage() {
+function ScrimRegisterForm() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const slotId = searchParams.get("slot");
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
 
   const [scrim, setScrim] = useState<Scrim | null>(null);
+  const [slot, setSlot] = useState<Slot | null>(null);
+  const [notFoundSlot, setNotFoundSlot] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [iglName, setIglName] = useState("");
   const [phone, setPhone] = useState("");
@@ -37,8 +42,18 @@ export default function ScrimRegisterPage() {
   const [criticalError, setCriticalError] = useState("");
 
   useEffect(() => {
-    getScrimById(Number(id)).then(setScrim);
-  }, [id]);
+    getScrimById(Number(id)).then((data) => {
+      setScrim(data);
+      if (data) {
+        const matched = data.slots.find((s) => s.id === Number(slotId));
+        if (matched) {
+          setSlot(matched);
+        } else {
+          setNotFoundSlot(true);
+        }
+      }
+    });
+  }, [id, slotId]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -56,7 +71,7 @@ export default function ScrimRegisterPage() {
       showToast("Please fill all fields.", "error");
       return;
     }
-    if (!scrim) return;
+    if (!scrim || !slot) return;
 
     setSubmitting(true);
 
@@ -65,7 +80,7 @@ export default function ScrimRegisterPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scrimId: scrim.id, teamName, iglName, phone }),
+        body: JSON.stringify({ slotId: slot.id, teamName, iglName, phone }),
       });
 
       const regData = await regResponse.json();
@@ -139,6 +154,33 @@ export default function ScrimRegisterPage() {
     );
   }
 
+  if (notFoundSlot || !slot) {
+    return (
+      <main className="min-h-screen bg-background bg-tactical-grid">
+        <div className="mx-auto max-w-2xl px-6 py-12">
+          <button
+            onClick={() => router.push(`/scrims/${scrim.id}`)}
+            className="mb-8 flex items-center gap-2 border border-border bg-panel px-5 py-2.5 font-mono text-sm text-muted-foreground transition hover:border-cyan hover:text-cyan"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+          <div className="border border-border bg-panel p-8 text-center">
+            <p className="font-mono text-sm text-muted-foreground">
+              Pick a time slot before registering.
+            </p>
+            <button
+              onClick={() => router.push(`/scrims/${scrim.id}`)}
+              className="btn-press mt-6 bg-ember px-6 py-3 font-display text-sm font-bold uppercase text-void transition hover:bg-[var(--ember-deep)]"
+            >
+              Choose a Time Slot
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background bg-tactical-grid">
       <div className="mx-auto max-w-2xl px-6 py-12">
@@ -152,7 +194,7 @@ export default function ScrimRegisterPage() {
 
         <div className="border border-border bg-panel p-8">
           <span className="font-mono text-xs uppercase tracking-widest text-cyan">
-            {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · Registration
+            {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · {slotTimeLabel(slot.time)} · Registration
           </span>
           <h1 className="mt-2 font-display text-4xl font-bold uppercase text-foreground">{scrim.title}</h1>
           <p className="mt-3 font-mono text-sm text-muted-foreground">
@@ -221,5 +263,12 @@ export default function ScrimRegisterPage() {
         </div>
       </div>
     </main>
+  );
+}
+export default function ScrimRegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <ScrimRegisterForm />
+    </Suspense>
   );
 }

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Clock3, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyRegistrations, type MyRegistration } from "@/services/registrations";
-import { combineDateTime, getCountdown } from "@/lib/countdown";
+import { combineDateWithSlot } from "@/lib/slotTime";
+import { getCountdown } from "@/lib/countdown";
 
 export default function RegisteredBanner() {
   const { user } = useAuth();
@@ -18,11 +19,11 @@ export default function RegisteredBanner() {
     getMyRegistrations()
       .then((regs) => {
         const upcoming = regs
-          .filter((r) => combineDateTime(r.scrim.date, r.scrim.time).getTime() > Date.now())
+          .filter((r) => combineDateWithSlot(r.scrim.date, r.slot.time).getTime() > Date.now())
           .sort(
             (a, b) =>
-              combineDateTime(a.scrim.date, a.scrim.time).getTime() -
-              combineDateTime(b.scrim.date, b.scrim.time).getTime()
+              combineDateWithSlot(a.scrim.date, a.slot.time).getTime() -
+              combineDateWithSlot(b.scrim.date, b.slot.time).getTime()
           );
 
         setReg(upcoming[0] || null);
@@ -33,7 +34,7 @@ export default function RegisteredBanner() {
   useEffect(() => {
     if (!reg) return;
 
-    const target = combineDateTime(reg.scrim.date, reg.scrim.time);
+    const target = combineDateWithSlot(reg.scrim.date, reg.slot.time);
     const update = () => setCountdown(getCountdown(target));
     update();
 

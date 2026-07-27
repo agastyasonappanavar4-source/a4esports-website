@@ -12,7 +12,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { getRegistrationDetails, type RegistrationDetails } from "@/services/registrations";
-import { combineDateTime, getCountdown } from "@/lib/countdown";
+import { combineDateWithSlot, slotTimeLabel } from "@/lib/slotTime";
+import { getCountdown } from "@/lib/countdown";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function MyMatchDetailPage() {
@@ -31,7 +32,7 @@ export default function MyMatchDetailPage() {
 
   useEffect(() => {
     if (!details) return;
-    const target = combineDateTime(details.scrim.date, details.scrim.time);
+    const target = combineDateWithSlot(details.scrim.date, details.slot.time);
     const update = () => setCountdown(getCountdown(target));
     update();
     const interval = setInterval(update, 60000);
@@ -71,7 +72,9 @@ export default function MyMatchDetailPage() {
     );
   }
 
-  const { registration, scrim, teams, totalTeams, remainingSlots, roomReleased } = details;
+  const { registration, scrim, slot, teams, totalTeams, remainingSlots, roomReleased } = details;
+
+  const effectiveMaxTeams = slot.maxTeams ?? scrim.maxTeams;
 
   const formattedDate = new Date(scrim.date).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -119,11 +122,11 @@ export default function MyMatchDetailPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock size={18} className="text-ember" />
-                  {scrim.time}
+                  {slotTimeLabel(slot.time)}
                 </div>
                 <div className="flex items-center gap-3">
                   <Users size={18} className="text-cyan" />
-                  {totalTeams} / {scrim.maxTeams} Teams Registered
+                  {totalTeams} / {effectiveMaxTeams} Teams Registered
                 </div>
                 <div className="flex items-center gap-3">
                   <Trophy size={18} className="text-amber" />
@@ -196,7 +199,7 @@ export default function MyMatchDetailPage() {
                 <div className="flex justify-between text-muted-foreground">
                   <span>Slot</span>
                   <span className="text-foreground">
-                    {registration.slotNumber} / {scrim.maxTeams}
+                    {registration.slotNumber} / {effectiveMaxTeams}
                   </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
@@ -219,9 +222,9 @@ export default function MyMatchDetailPage() {
                     Room ID
                   </p>
                   <div className="mt-2 flex items-center justify-between border border-border p-3 font-mono text-sm">
-                    {roomReleased && scrim.roomId ? scrim.roomId : "Not released yet"}
-                    {roomReleased && scrim.roomId && (
-                      <button onClick={() => copy(scrim.roomId!)} className="text-cyan">
+                    {roomReleased && slot.roomId ? slot.roomId : "Not released yet"}
+                    {roomReleased && slot.roomId && (
+                      <button onClick={() => copy(slot.roomId!)} className="text-cyan">
                         <Copy size={16} />
                       </button>
                     )}
@@ -233,9 +236,9 @@ export default function MyMatchDetailPage() {
                     Password
                   </p>
                   <div className="mt-2 flex items-center justify-between border border-border p-3 font-mono text-sm">
-                    {roomReleased && scrim.roomPassword ? scrim.roomPassword : "Not released yet"}
-                    {roomReleased && scrim.roomPassword && (
-                      <button onClick={() => copy(scrim.roomPassword!)} className="text-cyan">
+                    {roomReleased && slot.roomPassword ? slot.roomPassword : "Not released yet"}
+                    {roomReleased && slot.roomPassword && (
+                      <button onClick={() => copy(slot.roomPassword!)} className="text-cyan">
                         <Copy size={16} />
                       </button>
                     )}

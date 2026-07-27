@@ -1,5 +1,14 @@
 import prisma from "../config/prisma.js";
 
+const slotInclude = {
+    slots: {
+        include: {
+            _count: { select: { registrations: true } },
+        },
+        orderBy: { time: "asc" },
+    },
+};
+
 // GET all scrims
 export const getAllScrims = async (req, res) => {
     try {
@@ -7,6 +16,7 @@ export const getAllScrims = async (req, res) => {
             orderBy: { createdAt: "desc" },
             include: {
                 _count: { select: { registrations: true } },
+                ...slotInclude,
             },
         });
 
@@ -28,6 +38,7 @@ export const getScrimById = async (req, res) => {
 
         const scrim = await prisma.scrim.findUnique({
             where: { id: Number(id) },
+            include: slotInclude,
         });
 
         if (!scrim) {
@@ -48,15 +59,15 @@ export const getScrimById = async (req, res) => {
     }
 };
 
-// CREATE scrim
+// CREATE scrim (lobby). Optionally accepts `slots: string[]` of SlotTime values to create alongside it.
 export const createScrim = async (req, res) => {
     try {
-        const { title, mode, fee, date, time, image, rules, maxTeams } = req.body;
+        const { title, mode, fee, date, image, rules, maxTeams, slots } = req.body;
 
-        if (!title || !mode || !date || !time || !maxTeams) {
+        if (!title || !mode || !date || !maxTeams) {
             return res.status(400).json({
                 success: false,
-                message: "Title, mode, date, time and maxTeams are required.",
+                message: "Title, mode, date and maxTeams are required.",
             });
         }
 
@@ -66,11 +77,16 @@ export const createScrim = async (req, res) => {
                 mode,
                 fee: Number(fee) || 0,
                 date: new Date(date),
-                time,
                 image: image || "",
                 rules: rules || "",
                 maxTeams: Number(maxTeams),
+                ...(Array.isArray(slots) && slots.length > 0 && {
+                    slots: {
+                        create: slots.map((time) => ({ time })),
+                    },
+                }),
             },
+            include: slotInclude,
         });
 
         res.status(201).json({ success: true, data: scrim });
@@ -88,7 +104,7 @@ export const createScrim = async (req, res) => {
 export const updateScrim = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, mode, fee, date, time, image, rules, maxTeams } = req.body;
+        const { title, mode, fee, date, image, rules, maxTeams } = req.body;
 
         const scrim = await prisma.scrim.update({
             where: { id: Number(id) },
@@ -97,11 +113,11 @@ export const updateScrim = async (req, res) => {
                 ...(mode !== undefined && { mode }),
                 ...(fee !== undefined && { fee: Number(fee) }),
                 ...(date !== undefined && { date: new Date(date) }),
-                ...(time !== undefined && { time }),
                 ...(image !== undefined && { image }),
                 ...(rules !== undefined && { rules }),
                 ...(maxTeams !== undefined && { maxTeams: Number(maxTeams) }),
             },
+            include: slotInclude,
         });
 
         res.json({ success: true, data: scrim });
@@ -144,7 +160,7 @@ export const deleteScrim = async (req, res) => {
     }
 };
 
-// TOGGLE open/closed
+// TOGGLE open/closed for the whole lobby (all slots' visibility gate)
 export const updateScrimStatus = async (req, res) => {
     try {
         const { id } = req.params;
@@ -169,35 +185,6 @@ export const updateScrimStatus = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to update status",
-        });
-    }
-};
-
-// RELEASE room ID + password
-export const releaseRoom = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { roomId, roomPassword } = req.body;
-
-        if (!roomId || !roomPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "Room ID and password are required.",
-            });
-        }
-
-        const scrim = await prisma.scrim.update({
-            where: { id: Number(id) },
-            data: { roomId, roomPassword, roomReleased: true },
-        });
-
-        res.json({ success: true, data: scrim });
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to release room details",
         });
     }
 };

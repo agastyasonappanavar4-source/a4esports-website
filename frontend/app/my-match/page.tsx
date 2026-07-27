@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Trophy } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyRegistrations, type MyRegistration } from "@/services/registrations";
+import { slotTimeLabel } from "@/lib/slotTime";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function MyMatchesPage() {
@@ -78,7 +79,7 @@ export default function MyMatchesPage() {
                     {reg.scrim.title}
                   </h2>
                   <p className="mt-1 font-mono text-xs text-muted-foreground">
-                    Code: {reg.registrationCode} · Slot {reg.slotNumber} ·{" "}
+                    {slotTimeLabel(reg.slot.time)} · Code: {reg.registrationCode} · #{reg.slotNumber} ·{" "}
                     {reg.paymentStatus === "PAID" ? "Paid" : reg.scrim.fee === 0 ? "Free Entry" : "Payment Pending"}
                   </p>
                 </div>

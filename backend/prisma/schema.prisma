@@ -17,6 +17,13 @@ enum ScrimStatus {
   CLOSED
 }
 
+enum SlotTime {
+  PM_3
+  PM_6
+  PM_9
+  AM_12
+}
+
 enum PaymentStatus {
   PENDING
   PAID
@@ -44,21 +51,39 @@ model Scrim {
   mode            ScrimMode
   fee             Int
   date            DateTime
-  time            String
   image           String
   rules           String            @db.Text
   maxTeams        Int
 
   status          ScrimStatus       @default(OPEN)
 
+  slots           Slot[]
+  registrations   Registration[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model Slot {
+  id              Int               @id @default(autoincrement())
+
+  time            SlotTime
+  status          ScrimStatus       @default(OPEN)
+  maxTeams        Int?
+
   roomId          String?
   roomPassword    String?
   roomReleased    Boolean           @default(false)
+
+  scrimId         Int
+  scrim           Scrim             @relation(fields: [scrimId], references: [id], onDelete: Cascade)
 
   registrations   Registration[]
 
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  @@unique([scrimId, time])
 }
 
 model Registration {
@@ -79,6 +104,9 @@ model Registration {
 
   scrimId          Int
   scrim            Scrim            @relation(fields: [scrimId], references: [id])
+
+  slotId           Int
+  slot             Slot             @relation(fields: [slotId], references: [id])
 
   payment          Payment?
 

@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Trophy, Users, Calendar, IndianRupee, ShieldCheck } from "lucide-react";
+import { Trophy, Users, Calendar, IndianRupee, ShieldCheck, Clock } from "lucide-react";
 import { getScrimById } from "@/lib/scrims";
+import { slotTimeLabel } from "@/lib/slotTime";
 import { CornerFrame } from "@/components/ui/CornerFrame";
 
 export default async function TournamentPage({
@@ -15,6 +16,8 @@ export default async function TournamentPage({
   if (!scrim) {
     notFound();
   }
+
+  const openSlots = scrim.slots.filter((slot) => slot.status === "OPEN");
 
   const formattedDate = new Date(scrim.date).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -57,7 +60,7 @@ export default async function TournamentPage({
                 {scrim.maxTeams} Teams
               </span>
               <span className="border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
-                {formattedDate} · {scrim.time}
+                {formattedDate}
               </span>
             </div>
 
@@ -109,12 +112,65 @@ export default async function TournamentPage({
                 </div>
               </div>
 
-              <Link
-                href={`/scrims/${scrim.id}/register`}
-                className="mt-8 flex w-full items-center justify-center bg-ember py-4 font-display text-lg font-bold uppercase text-void transition hover:bg-[var(--ember-deep)]"
-              >
-                Register Now
-              </Link>
+            </div>
+
+            <div className="mt-6 border border-border bg-panel p-6">
+              <h2 className="mb-2 font-display text-xl font-bold uppercase text-foreground">
+                Choose Your Time Slot
+              </h2>
+              <p className="mb-6 font-mono text-xs text-muted-foreground">
+                Each time slot runs as its own lobby with its own set of teams.
+              </p>
+
+              {openSlots.length === 0 ? (
+                <p className="font-mono text-sm text-muted-foreground">
+                  No time slots are open right now. Check back soon.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {openSlots.map((slot) => {
+                    const effectiveMax = slot.maxTeams ?? scrim.maxTeams;
+                    const registered = slot._count?.registrations ?? 0;
+                    const full = registered >= effectiveMax;
+
+                    const rowClasses = `flex items-center justify-between border p-4 font-mono text-sm transition ${
+                      full
+                        ? "cursor-not-allowed border-border/50 text-muted-foreground opacity-50"
+                        : "border-border text-foreground hover:border-ember hover:bg-ember/5"
+                    }`;
+
+                    const rowContent = (
+                      <>
+                        <span className="flex items-center gap-3">
+                          <Clock size={16} className="text-ember" />
+                          {slotTimeLabel(slot.time)}
+                        </span>
+                        <span className={full ? "" : "text-cyan"}>
+                          {full ? "Full" : `${registered}/${effectiveMax} teams`}
+                        </span>
+                      </>
+                    );
+
+                    if (full) {
+                      return (
+                        <div key={slot.id} className={rowClasses}>
+                          {rowContent}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <Link
+                        key={slot.id}
+                        href={`/scrims/${scrim.id}/register?slot=${slot.id}`}
+                        className={rowClasses}
+                      >
+                        {rowContent}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

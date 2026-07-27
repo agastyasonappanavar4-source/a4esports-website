@@ -2,14 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, KeyRound, Save } from "lucide-react";
+import { ArrowLeft, KeyRound, Save, Plus, Trash2, Power } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
-import { getScrimById, type Scrim } from "@/lib/scrims";
+import { getScrimById } from "@/lib/scrims";
+import type { Scrim, Slot } from "@/lib/scrims";
+import {
+  BR_SLOT_TIMES,
+  CS_SLOT_TIMES,
+  slotTimeLabel,
+  type SlotTime,
+} from "@/lib/slotTime";
 import {
   updateScrimRequest,
-  releaseRoomRequest,
-  getRegistrationsByScrimRequest,
+  createSlotRequest,
+  deleteSlotRequest,
+  updateSlotStatusRequest,
+  releaseSlotRoomRequest,
+  getRegistrationsBySlotRequest,
   type AdminRegistration,
 } from "@/services/admin";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -21,11 +31,16 @@ export default function ManageScrimPage() {
   const { showToast } = useToast();
 
   const [scrim, setScrim] = useState<Scrim | null>(null);
-  const [registrations, setRegistrations] = useState<AdminRegistration[] | null>(null);
-  const [roomId, setRoomId] = useState("");
-  const [roomPassword, setRoomPassword] = useState("");
   const [saving, setSaving] = useState(false);
-  const [releasing, setReleasing] = useState(false);
+
+  // Per-slot room-release input state, keyed by slot id.
+  const [roomInputs, setRoomInputs] = useState<Record<number, { roomId: string; roomPassword: string }>>({});
+  const [releasingSlotId, setReleasingSlotId] = useState<number | null>(null);
+  const [busySlotId, setBusySlotId] = useState<number | null>(null);
+  const [addingSlot, setAddingSlot] = useState(false);
+
+  const [expandedSlotId, setExpandedSlotId] = useState<number | null>(null);
+  const [slotRegistrations, setSlotRegistrations] = useState<Record<number, AdminRegistration[]>>({});
 
   useEffect(() => {
     if (!authLoading && (!user || !user.isAdmin)) {
@@ -33,11 +48,13 @@ export default function ManageScrimPage() {
     }
   }, [authLoading, user, router]);
 
-  useEffect(() => {
+  const loadScrim = () => {
     getScrimById(Number(id)).then(setScrim);
-    getRegistrationsByScrimRequest(Number(id))
-      .then(setRegistrations)
-      .catch(() => setRegistrations([]));
+  };
+
+  useEffect(() => {
+    loadScrim();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const update = <K extends keyof Scrim>(key: K, value: Scrim[K]) => {
@@ -54,7 +71,6 @@ export default function ManageScrimPage() {
         mode: scrim.mode,
         fee: scrim.fee,
         date: scrim.date,
-        time: scrim.time,
         image: scrim.image,
         rules: scrim.rules,
         maxTeams: scrim.maxTeams,
@@ -67,23 +83,85 @@ export default function ManageScrimPage() {
     }
   };
 
-  const handleReleaseRoom = async () => {
-    if (!roomId || !roomPassword) {
+  const availableSlotTimes = scrim?.mode === "CS" ? CS_SLOT_TIMES : BR_SLOT_TIMES;
+  const usedTimes = new Set((scrim?.slots ?? []).map((s) => s.time));
+  const addableTimes = availableSlotTimes.filter((t) => !usedTimes.has(t));
+
+  const handleAddSlot = async (time: SlotTime) => {
+    if (!scrim) return;
+    setAddingSlot(true);
+
+    try {
+      await createSlotRequest(scrim.id, time);
+      showToast(`${slotTimeLabel(time)} slot added.`, "success");
+      loadScrim();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to add slot", "error");
+    } finally {
+      setAddingSlot(false);
+    }
+  };
+
+  // This is the "turn off today's 3pm lobby" action — closes just this one slot.
+  const handleToggleSlotStatus = async (slot: Slot) => {
+    setBusySlotId(slot.id);
+    try {
+      const nextStatus = slot.status === "OPEN" ? "CLOSED" : "OPEN";
+      await updateSlotStatusRequest(slot.id, nextStatus);
+      showToast(
+        `${slotTimeLabel(slot.time)} is now ${nextStatus === "OPEN" ? "open" : "closed"}.`,
+        "success"
+      );
+      loadScrim();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to update slot", "error");
+    } finally {
+      setBusySlotId(null);
+    }
+  };
+
+  const handleDeleteSlot = async (slot: Slot) => {
+    setBusySlotId(slot.id);
+    try {
+      await deleteSlotRequest(slot.id);
+      showToast(`${slotTimeLabel(slot.time)} slot deleted.`, "success");
+      loadScrim();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to delete slot", "error");
+    } finally {
+      setBusySlotId(null);
+    }
+  };
+
+  const handleReleaseRoom = async (slot: Slot) => {
+    const input = roomInputs[slot.id];
+    if (!input?.roomId || !input?.roomPassword) {
       showToast("Enter both Room ID and Password.", "error");
       return;
     }
-    if (!scrim) return;
 
-    setReleasing(true);
-
+    setReleasingSlotId(slot.id);
     try {
-      const updated = await releaseRoomRequest(scrim.id, roomId, roomPassword);
-      setScrim(updated);
-      showToast("Room details released to all registered teams.", "success");
+      await releaseSlotRoomRequest(slot.id, input.roomId, input.roomPassword);
+      showToast(`Room details released for ${slotTimeLabel(slot.time)}.`, "success");
+      loadScrim();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Failed to release room", "error");
     } finally {
-      setReleasing(false);
+      setReleasingSlotId(null);
+    }
+  };
+
+  const toggleExpanded = (slot: Slot) => {
+    if (expandedSlotId === slot.id) {
+      setExpandedSlotId(null);
+      return;
+    }
+    setExpandedSlotId(slot.id);
+    if (!slotRegistrations[slot.id]) {
+      getRegistrationsBySlotRequest(slot.id)
+        .then((regs) => setSlotRegistrations((prev) => ({ ...prev, [slot.id]: regs })))
+        .catch(() => setSlotRegistrations((prev) => ({ ...prev, [slot.id]: [] })));
     }
   };
 
@@ -119,7 +197,7 @@ export default function ManageScrimPage() {
 
         <div className="border border-border bg-panel p-8">
           <h1 className="font-display text-3xl font-bold uppercase text-foreground">
-            Manage Tournament
+            Manage Lobby
           </h1>
 
           <div className="mt-8 space-y-5">
@@ -177,26 +255,15 @@ export default function ManageScrimPage() {
 
               <div>
                 <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                  Time
+                  Max Teams (per slot, default)
                 </label>
                 <input
-                  value={scrim.time}
-                  onChange={(e) => update("time", e.target.value)}
+                  type="number"
+                  value={scrim.maxTeams}
+                  onChange={(e) => update("maxTeams", Number(e.target.value))}
                   className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Max Teams
-              </label>
-              <input
-                type="number"
-                value={scrim.maxTeams}
-                onChange={(e) => update("maxTeams", Number(e.target.value))}
-                className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
-              />
             </div>
 
             <div>
@@ -223,84 +290,182 @@ export default function ManageScrimPage() {
         </div>
 
         <div className="mt-6 border border-border bg-panel p-8">
-          <h2 className="font-display text-xl font-bold uppercase text-foreground">
-            Room Details
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl font-bold uppercase text-foreground">
+              Time Slots
+            </h2>
+          </div>
+          <p className="mt-2 font-mono text-xs text-muted-foreground">
+            Close a slot to stop new registrations for just that time — the other slots keep
+            running. Delete removes it entirely (only allowed before anyone registers).
+          </p>
 
-          {scrim.roomReleased ? (
-            <p className="mt-2 font-mono text-sm text-cyan">
-              Room details are live — Room ID: {scrim.roomId} · Password: {scrim.roomPassword}
-            </p>
-          ) : (
-            <p className="mt-2 font-mono text-sm text-muted-foreground">
-              Not released yet. Registered teams will see this the moment you release it.
-            </p>
-          )}
+          <div className="mt-6 space-y-4">
+            {scrim.slots.length === 0 && (
+              <p className="font-mono text-sm text-muted-foreground">No time slots yet.</p>
+            )}
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <input
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              placeholder="Room ID"
-              className="border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
-            />
-            <input
-              value={roomPassword}
-              onChange={(e) => setRoomPassword(e.target.value)}
-              placeholder="Room Password"
-              className="border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
-            />
+            {[...scrim.slots]
+              .sort((a, b) => availableSlotTimes.indexOf(a.time) - availableSlotTimes.indexOf(b.time))
+              .map((slot) => {
+                const regs = slotRegistrations[slot.id];
+                const expanded = expandedSlotId === slot.id;
+                const input = roomInputs[slot.id] ?? { roomId: "", roomPassword: "" };
+
+                return (
+                  <div key={slot.id} className="border border-border bg-panel-2 p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            slot.status === "OPEN" ? "bg-cyan" : "bg-muted-foreground"
+                          }`}
+                        />
+                        <span className="font-mono text-base font-bold text-foreground">
+                          {slotTimeLabel(slot.time)}
+                        </span>
+                        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                          {slot.status}
+                        </span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {slot._count?.registrations ?? 0} / {slot.maxTeams ?? scrim.maxTeams} teams
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => toggleExpanded(slot)}
+                          className="border border-border px-3 py-2 font-mono text-xs uppercase text-muted-foreground transition hover:border-cyan hover:text-cyan"
+                        >
+                          {expanded ? "Hide Teams" : "View Teams"}
+                        </button>
+                        <button
+                          onClick={() => handleToggleSlotStatus(slot)}
+                          disabled={busySlotId === slot.id}
+                          className="flex items-center gap-1.5 border border-amber/50 bg-amber/10 px-3 py-2 font-mono text-xs uppercase text-amber transition hover:bg-amber hover:text-void disabled:opacity-50"
+                        >
+                          <Power size={14} />
+                          {slot.status === "OPEN" ? "Close" : "Reopen"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSlot(slot)}
+                          disabled={busySlotId === slot.id || (slot._count?.registrations ?? 0) > 0}
+                          className="flex items-center gap-1.5 border border-destructive/50 bg-destructive/10 px-3 py-2 font-mono text-xs uppercase text-destructive transition hover:bg-destructive hover:text-void disabled:opacity-30"
+                          title={
+                            (slot._count?.registrations ?? 0) > 0
+                              ? "Close it instead — it already has registrations"
+                              : "Delete this slot"
+                          }
+                        >
+                          <Trash2 size={14} />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-3 border-t border-border/50 pt-4 md:grid-cols-[1fr_1fr_auto]">
+                      <input
+                        value={input.roomId}
+                        onChange={(e) =>
+                          setRoomInputs((prev) => ({
+                            ...prev,
+                            [slot.id]: { ...input, roomId: e.target.value },
+                          }))
+                        }
+                        placeholder="Room ID"
+                        className="border border-border bg-panel p-3 font-mono text-sm text-foreground outline-none focus:border-cyan"
+                      />
+                      <input
+                        value={input.roomPassword}
+                        onChange={(e) =>
+                          setRoomInputs((prev) => ({
+                            ...prev,
+                            [slot.id]: { ...input, roomPassword: e.target.value },
+                          }))
+                        }
+                        placeholder="Room Password"
+                        className="border border-border bg-panel p-3 font-mono text-sm text-foreground outline-none focus:border-cyan"
+                      />
+                      <button
+                        onClick={() => handleReleaseRoom(slot)}
+                        disabled={releasingSlotId === slot.id}
+                        className="flex items-center justify-center gap-2 border border-cyan bg-cyan/10 px-4 py-3 font-mono text-xs font-bold uppercase text-cyan transition hover:bg-cyan hover:text-void disabled:opacity-50"
+                      >
+                        <KeyRound size={14} />
+                        {slot.roomReleased ? "Update" : "Release"}
+                      </button>
+                    </div>
+                    {slot.roomReleased && (
+                      <p className="mt-2 font-mono text-xs text-cyan">
+                        Live — Room ID: {slot.roomId} · Password: {slot.roomPassword}
+                      </p>
+                    )}
+
+                    {expanded && (
+                      <div className="mt-4 border-t border-border/50 pt-4">
+                        {!regs ? (
+                          <Skeleton className="h-16 w-full" />
+                        ) : regs.length === 0 ? (
+                          <p className="font-mono text-xs text-muted-foreground">
+                            No teams registered yet for this slot.
+                          </p>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full font-mono text-xs">
+                              <thead>
+                                <tr className="border-b border-border text-left text-muted-foreground">
+                                  <th className="pb-2 pr-4">#</th>
+                                  <th className="pb-2 pr-4">Team</th>
+                                  <th className="pb-2 pr-4">IGL</th>
+                                  <th className="pb-2 pr-4">Phone</th>
+                                  <th className="pb-2 pr-4">Code</th>
+                                  <th className="pb-2">Payment</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {regs.map((reg) => (
+                                  <tr key={reg.id} className="border-b border-border/30 text-foreground">
+                                    <td className="py-2 pr-4">#{reg.slotNumber}</td>
+                                    <td className="py-2 pr-4">{reg.teamName}</td>
+                                    <td className="py-2 pr-4">{reg.iglName}</td>
+                                    <td className="py-2 pr-4">{reg.phone}</td>
+                                    <td className="py-2 pr-4">{reg.registrationCode}</td>
+                                    <td className="py-2">
+                                      <span className={reg.paymentStatus === "PAID" ? "text-cyan" : "text-amber"}>
+                                        {reg.paymentStatus}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
 
-          <button
-            onClick={handleReleaseRoom}
-            disabled={releasing}
-            className="btn-press mt-4 flex w-full items-center justify-center gap-2 border border-cyan bg-cyan/10 py-3.5 font-display font-bold uppercase text-cyan transition hover:bg-cyan hover:text-void disabled:opacity-50"
-          >
-            <KeyRound size={18} />
-            {releasing ? "Releasing..." : scrim.roomReleased ? "Update Room Details" : "Release Room Details"}
-          </button>
-        </div>
-
-        <div className="mt-6 border border-border bg-panel p-8">
-          <h2 className="mb-5 font-display text-xl font-bold uppercase text-foreground">
-            Registered Teams {registrations ? `(${registrations.length})` : ""}
-          </h2>
-
-          {!registrations ? (
-            <Skeleton className="h-40 w-full" />
-          ) : registrations.length === 0 ? (
-            <p className="font-mono text-sm text-muted-foreground">No teams registered yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full font-mono text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-3 pr-4">Slot</th>
-                    <th className="pb-3 pr-4">Team</th>
-                    <th className="pb-3 pr-4">IGL</th>
-                    <th className="pb-3 pr-4">Phone</th>
-                    <th className="pb-3 pr-4">Code</th>
-                    <th className="pb-3">Payment</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {registrations.map((reg) => (
-                    <tr key={reg.id} className="border-b border-border/50 text-foreground">
-                      <td className="py-3 pr-4">#{reg.slotNumber}</td>
-                      <td className="py-3 pr-4">{reg.teamName}</td>
-                      <td className="py-3 pr-4">{reg.iglName}</td>
-                      <td className="py-3 pr-4">{reg.phone}</td>
-                      <td className="py-3 pr-4">{reg.registrationCode}</td>
-                      <td className="py-3">
-                        <span className={reg.paymentStatus === "PAID" ? "text-cyan" : "text-amber"}>
-                          {reg.paymentStatus}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {addableTimes.length > 0 && (
+            <div className="mt-6 border-t border-border pt-6">
+              <p className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Add a Time Slot
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {addableTimes.map((time) => (
+                  <button
+                    key={time}
+                    onClick={() => handleAddSlot(time)}
+                    disabled={addingSlot}
+                    className="flex items-center gap-2 border border-border px-4 py-2.5 font-mono text-sm text-foreground transition hover:border-ember hover:text-ember disabled:opacity-50"
+                  >
+                    <Plus size={14} />
+                    {slotTimeLabel(time)}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Bell, Trophy, KeyRound, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyRegistrations, type MyRegistration } from "@/services/registrations";
-import { combineDateTime, getCountdown } from "@/lib/countdown";
+import { combineDateWithSlot, slotTimeLabel } from "@/lib/slotTime";
+import { getCountdown } from "@/lib/countdown";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function NotificationsPage() {
         ) : (
           <div className="mt-10 space-y-4">
             {registrations.map((reg) => {
-              const target = combineDateTime(reg.scrim.date, reg.scrim.time);
+              const target = combineDateWithSlot(reg.scrim.date, reg.slot.time);
               const isPast = target.getTime() < Date.now();
 
               return (
@@ -60,7 +61,7 @@ export default function NotificationsPage() {
                         {reg.scrim.title}
                       </h3>
                       <p className="mt-1 font-mono text-sm text-muted-foreground">
-                        Registered · Slot {reg.slotNumber} · Code {reg.registrationCode}
+                        Registered · {slotTimeLabel(reg.slot.time)} · #{reg.slotNumber} · Code {reg.registrationCode}
                       </p>
                       <p className="mt-1 font-mono text-xs text-muted-foreground">
                         {isPast ? "Match has started or ended" : `Starts in ${getCountdown(target)}`}
@@ -68,7 +69,7 @@ export default function NotificationsPage() {
                     </div>
                   </div>
 
-                  {reg.scrim.roomReleased && (
+                  {reg.slot.roomReleased && (
                     <div className="mt-4 flex items-center gap-3 border-t border-border pt-4 font-mono text-sm text-cyan">
                       <KeyRound size={16} />
                       Room ID has been released for this match

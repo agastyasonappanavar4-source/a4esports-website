@@ -168,7 +168,7 @@ export default function AdminDashboardPage() {
                       <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                         · {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
                       </span>
-                      {scrim.roomReleased && (
+                      {scrim.slots.some((s) => s.roomReleased) && (
                         <span className="font-mono text-xs uppercase tracking-widest text-amber">
                           · Room Released
                         </span>

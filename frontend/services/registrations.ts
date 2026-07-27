@@ -1,4 +1,16 @@
+import type { SlotTime } from "@/lib/slotTime";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export interface RegistrationSlot {
+  id: number;
+  time: SlotTime;
+  status: "OPEN" | "CLOSED";
+  maxTeams: number | null;
+  roomId: string | null;
+  roomPassword: string | null;
+  roomReleased: boolean;
+}
 
 export interface MyRegistration {
   id: number;
@@ -15,14 +27,11 @@ export interface MyRegistration {
     mode: "BR" | "CS";
     fee: number;
     date: string;
-    time: string;
     maxTeams: number;
     status: string;
     rules: string;
-    roomId: string | null;
-    roomPassword: string | null;
-    roomReleased: boolean;
   };
+  slot: RegistrationSlot;
 }
 
 export async function getMyRegistrations(): Promise<MyRegistration[]> {
@@ -39,6 +48,7 @@ export async function getMyRegistrations(): Promise<MyRegistration[]> {
 export interface RegistrationDetails {
   registration: MyRegistration;
   scrim: MyRegistration["scrim"];
+  slot: RegistrationSlot;
   teams: { teamName: string; slotNumber: number }[];
   totalTeams: number;
   remainingSlots: number;

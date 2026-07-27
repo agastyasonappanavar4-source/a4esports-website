@@ -2,33 +2,50 @@ import prisma from "../config/prisma.js";
 
 export const registerTeam = async (req, res) => {
     try {
-        const { scrimId, teamName, iglName, phone } = req.body;
+        const { slotId, teamName, iglName, phone } = req.body;
 
-        const scrim = await prisma.scrim.findUnique({
-            where: { id: Number(scrimId) },
-        });
-
-        if (!scrim) {
-            return res.status(404).json({
+        if (!slotId) {
+            return res.status(400).json({
                 success: false,
-                message: "Scrim not found",
+                message: "slotId is required",
             });
         }
 
-        const totalRegistrations = await prisma.registration.count({
-            where: { scrimId: Number(scrimId) },
+        const slot = await prisma.slot.findUnique({
+            where: { id: Number(slotId) },
+            include: { scrim: true },
         });
 
-        if (totalRegistrations >= scrim.maxTeams) {
+        if (!slot) {
+            return res.status(404).json({
+                success: false,
+                message: "Time slot not found",
+            });
+        }
+
+        if (slot.status !== "OPEN" || slot.scrim.status !== "OPEN") {
             return res.status(400).json({
                 success: false,
-                message: "Scrim is full",
+                message: "This time slot is not open for registration",
+            });
+        }
+
+        const effectiveMaxTeams = slot.maxTeams ?? slot.scrim.maxTeams;
+
+        const totalRegistrations = await prisma.registration.count({
+            where: { slotId: Number(slotId) },
+        });
+
+        if (totalRegistrations >= effectiveMaxTeams) {
+            return res.status(400).json({
+                success: false,
+                message: "This time slot is full",
             });
         }
 
         const existingTeam = await prisma.registration.findFirst({
             where: {
-                scrimId: Number(scrimId),
+                slotId: Number(slotId),
                 teamName,
             },
         });
@@ -36,14 +53,14 @@ export const registerTeam = async (req, res) => {
         if (existingTeam) {
             return res.status(400).json({
                 success: false,
-                message: "Team already registered",
+                message: "Team already registered for this time slot",
             });
         }
 
         const slotNumber = totalRegistrations + 1;
 
         const registrationCode =
-            `${scrim.mode}${scrim.id}-${String(slotNumber).padStart(4, "0")}`;
+            `${slot.scrim.mode}${slot.scrim.id}-${slot.time}-${String(slotNumber).padStart(4, "0")}`;
 
         const registration = await prisma.registration.create({
             data: {
@@ -52,7 +69,8 @@ export const registerTeam = async (req, res) => {
                 iglName,
                 phone,
                 slotNumber,
-                scrimId: Number(scrimId),
+                scrimId: slot.scrim.id,
+                slotId: Number(slotId),
                 userId: req.user.userId,
             },
         });
@@ -79,6 +97,7 @@ export const getRegistrationById = async (req, res) => {
             },
             include: {
                 scrim: true,
+                slot: true,
             },
         });
 
@@ -111,6 +130,7 @@ export const getRegistrationDetails = async (req, res) => {
             },
             include: {
                 scrim: true,
+                slot: true,
             },
         });
 
@@ -123,7 +143,7 @@ export const getRegistrationDetails = async (req, res) => {
 
         const teams = await prisma.registration.findMany({
             where: {
-                scrimId: registration.scrimId,
+                slotId: registration.slotId,
             },
             select: {
                 teamName: true,
@@ -134,15 +154,18 @@ export const getRegistrationDetails = async (req, res) => {
             },
         });
 
+        const effectiveMaxTeams = registration.slot.maxTeams ?? registration.scrim.maxTeams;
+
         res.status(200).json({
             success: true,
             data: {
                 registration,
                 scrim: registration.scrim,
+                slot: registration.slot,
                 teams,
                 totalTeams: teams.length,
-                remainingSlots: registration.scrim.maxTeams - teams.length,
-                roomReleased: registration.scrim.roomReleased,
+                remainingSlots: effectiveMaxTeams - teams.length,
+                roomReleased: registration.slot.roomReleased,
             },
         });
     } catch (error) {
@@ -158,7 +181,7 @@ export const getMyRegistrations = async (req, res) => {
     try {
         const registrations = await prisma.registration.findMany({
             where: { userId: req.user.userId },
-            include: { scrim: true },
+            include: { scrim: true, slot: true },
             orderBy: { createdAt: "desc" },
         });
 
@@ -192,16 +215,40 @@ export const getRegistrationsByScrim = async (req, res) => {
                         email: true,
                     },
                 },
+                slot: true,
             },
-            orderBy: {
-                slotNumber: "asc",
-            },
+            orderBy: [{ slotId: "asc" }, { slotNumber: "asc" }],
         });
 
         res.status(200).json({
             success: true,
             data: registrations,
         });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch registrations",
+        });
+    }
+};
+
+export const getRegistrationsBySlot = async (req, res) => {
+    try {
+        const slotId = Number(req.params.slotId);
+
+        const registrations = await prisma.registration.findMany({
+            where: { slotId },
+            include: {
+                user: {
+                    select: { id: true, username: true, email: true },
+                },
+            },
+            orderBy: { slotNumber: "asc" },
+        });
+
+        res.status(200).json({ success: true, data: registrations });
     } catch (error) {
         console.error(error);
 

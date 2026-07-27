@@ -6,23 +6,26 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
 import { createScrimRequest, type ScrimInput } from "@/services/admin";
+import { BR_SLOT_TIMES, CS_SLOT_TIMES, slotTimeLabel, type SlotTime } from "@/lib/slotTime";
 
 export default function NewScrimPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
 
-  const [form, setForm] = useState<ScrimInput>({
+  const [form, setForm] = useState<Omit<ScrimInput, "slots">>({
     title: "",
     mode: "BR",
     fee: 0,
     date: "",
-    time: "",
     image: "",
     rules: "",
     maxTeams: 48,
   });
+  const [selectedSlots, setSelectedSlots] = useState<SlotTime[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const availableSlots = form.mode === "BR" ? BR_SLOT_TIMES : CS_SLOT_TIMES;
 
   useEffect(() => {
     if (!authLoading && (!user || !user.isAdmin)) {
@@ -30,24 +33,40 @@ export default function NewScrimPage() {
     }
   }, [authLoading, user, router]);
 
-  const update = <K extends keyof ScrimInput>(key: K, value: ScrimInput[K]) => {
+  // Reset slot selection to only valid options when mode changes.
+  useEffect(() => {
+    setSelectedSlots((prev) => prev.filter((t) => availableSlots.includes(t)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.mode]);
+
+  const update = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const toggleSlot = (time: SlotTime) => {
+    setSelectedSlots((prev) =>
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
+    );
+  };
+
   const handleSubmit = async () => {
-    if (!form.title || !form.date || !form.time || !form.maxTeams) {
-      showToast("Title, date, time and max teams are required.", "error");
+    if (!form.title || !form.date || !form.maxTeams) {
+      showToast("Title, date and max teams are required.", "error");
+      return;
+    }
+    if (selectedSlots.length === 0) {
+      showToast("Select at least one time slot.", "error");
       return;
     }
 
     setSubmitting(true);
 
     try {
-      await createScrimRequest(form);
-      showToast("Tournament created.", "success");
+      await createScrimRequest({ ...form, slots: selectedSlots });
+      showToast("Lobby created.", "success");
       router.push("/admin");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to create tournament", "error");
+      showToast(err instanceof Error ? err.message : "Failed to create lobby", "error");
     } finally {
       setSubmitting(false);
     }
@@ -74,8 +93,12 @@ export default function NewScrimPage() {
 
         <div className="border border-border bg-panel p-8">
           <h1 className="font-display text-3xl font-bold uppercase text-foreground">
-            New Tournament
+            New Lobby
           </h1>
+          <p className="mt-2 font-mono text-xs text-muted-foreground">
+            A lobby is one banner on the home page (e.g. &quot;₹35 BR&quot;). Pick which time
+            slots should be open under it — each slot runs as its own separate match.
+          </p>
 
           <div className="mt-8 space-y-5">
             <div>
@@ -85,7 +108,7 @@ export default function NewScrimPage() {
               <input
                 value={form.title}
                 onChange={(e) => update("title", e.target.value)}
-                placeholder="Weekend BR Championship"
+                placeholder="₹35 BR"
                 className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
               />
             </div>
@@ -118,35 +141,49 @@ export default function NewScrimPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => update("date", e.target.value)}
-                  className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                  Time (e.g. 8:00 PM)
-                </label>
-                <input
-                  value={form.time}
-                  onChange={(e) => update("time", e.target.value)}
-                  placeholder="8:00 PM"
-                  className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
-                />
-              </div>
+            <div>
+              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Date
+              </label>
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => update("date", e.target.value)}
+                className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
+              />
             </div>
 
             <div>
               <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Max Teams
+                Time Slots ({form.mode === "BR" ? "up to 4" : "up to 3"})
+              </label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {availableSlots.map((time) => {
+                  const active = selectedSlots.includes(time);
+                  return (
+                    <button
+                      key={time}
+                      type="button"
+                      onClick={() => toggleSlot(time)}
+                      className={`border p-3 font-mono text-sm transition ${
+                        active
+                          ? "border-ember bg-ember/10 text-ember"
+                          : "border-border text-muted-foreground hover:border-cyan hover:text-cyan"
+                      }`}
+                    >
+                      {slotTimeLabel(time)}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 font-mono text-xs text-muted-foreground">
+                You can add or remove slots later from the lobby&apos;s manage page.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Max Teams (per slot)
               </label>
               <input
                 type="number"
@@ -174,7 +211,7 @@ export default function NewScrimPage() {
               disabled={submitting}
               className="btn-press w-full bg-ember py-4 font-display text-lg font-bold uppercase text-void transition hover:bg-[var(--ember-deep)] disabled:opacity-50"
             >
-              {submitting ? "Creating..." : "Create Tournament"}
+              {submitting ? "Creating..." : "Create Lobby"}
             </button>
           </div>
         </div>
