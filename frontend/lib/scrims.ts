@@ -21,11 +21,13 @@ export interface Scrim {
   maxTeams: number;
   date: string;
   image: string;
+  prizePool?: string;
   rules: string;
   status: string;
   slots: Slot[];
   _count?: { registrations: number };
 }
+
 
 export async function getScrims(): Promise<Scrim[]> {
   const response = await apiRequest("/api/scrims");

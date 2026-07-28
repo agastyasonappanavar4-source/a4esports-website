@@ -1,0 +1,22 @@
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3100
+- Network:       http://10.35.13.114:3100
+- Environments: .env.local
+✓ Ready in 1498ms
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\abhil\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\abhil\Desktop\A4esports\ff-scrims\frontend\package-lock.json
+   * C:\Users\abhil\Desktop\A4esports\ff-scrims\package-lock.json
+
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          59684
+- Dir:          C:\Users\abhil\Desktop\A4esports\ff-scrims\frontend
+- Log:          .next\dev\logs\next-development.log
+
+Run taskkill /PID 59684 /F to stop it.
+[?25h

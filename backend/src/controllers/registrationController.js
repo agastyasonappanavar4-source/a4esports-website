@@ -33,7 +33,10 @@ export const registerTeam = async (req, res) => {
         const effectiveMaxTeams = slot.maxTeams ?? slot.scrim.maxTeams;
 
         const totalRegistrations = await prisma.registration.count({
-            where: { slotId: Number(slotId) },
+            where: {
+                slotId: Number(slotId),
+                paymentStatus: "PAID",
+            },
         });
 
         if (totalRegistrations >= effectiveMaxTeams) {
@@ -47,6 +50,7 @@ export const registerTeam = async (req, res) => {
             where: {
                 slotId: Number(slotId),
                 teamName,
+                paymentStatus: "PAID",
             },
         });
 
@@ -57,10 +61,13 @@ export const registerTeam = async (req, res) => {
             });
         }
 
-        const slotNumber = totalRegistrations + 1;
+        const isFree = slot.scrim.fee === 0;
+        const paymentStatus = isFree ? "PAID" : "PENDING";
+        const slotNumber = isFree ? totalRegistrations + 1 : 0;
 
-        const registrationCode =
-            `${slot.scrim.mode}${slot.scrim.id}-${slot.time}-${String(slotNumber).padStart(4, "0")}`;
+        const registrationCode = isFree
+            ? `${slot.scrim.mode}${slot.scrim.id}-${slot.time}-${String(slotNumber).padStart(4, "0")}`
+            : `${slot.scrim.mode}${slot.scrim.id}-${slot.time}-PENDING-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
         const registration = await prisma.registration.create({
             data: {
@@ -72,6 +79,7 @@ export const registerTeam = async (req, res) => {
                 scrimId: slot.scrim.id,
                 slotId: Number(slotId),
                 userId: req.user.userId,
+                paymentStatus,
             },
         });
 
@@ -141,9 +149,17 @@ export const getRegistrationDetails = async (req, res) => {
             });
         }
 
+        if (registration.scrim.fee > 0 && registration.paymentStatus !== "PAID") {
+            return res.status(403).json({
+                success: false,
+                message: "Payment required for this registration",
+            });
+        }
+
         const teams = await prisma.registration.findMany({
             where: {
                 slotId: registration.slotId,
+                paymentStatus: "PAID",
             },
             select: {
                 teamName: true,
@@ -180,7 +196,10 @@ export const getRegistrationDetails = async (req, res) => {
 export const getMyRegistrations = async (req, res) => {
     try {
         const registrations = await prisma.registration.findMany({
-            where: { userId: req.user.userId },
+            where: {
+                userId: req.user.userId,
+                paymentStatus: "PAID",
+            },
             include: { scrim: true, slot: true },
             orderBy: { createdAt: "desc" },
         });
@@ -206,6 +225,7 @@ export const getRegistrationsByScrim = async (req, res) => {
         const registrations = await prisma.registration.findMany({
             where: {
                 scrimId,
+                paymentStatus: "PAID",
             },
             include: {
                 user: {
@@ -239,7 +259,7 @@ export const getRegistrationsBySlot = async (req, res) => {
         const slotId = Number(req.params.slotId);
 
         const registrations = await prisma.registration.findMany({
-            where: { slotId },
+            where: { slotId, paymentStatus: "PAID" },
             include: {
                 user: {
                     select: { id: true, username: true, email: true },
@@ -256,5 +276,24 @@ export const getRegistrationsBySlot = async (req, res) => {
             success: false,
             message: "Failed to fetch registrations",
         });
+    }
+};
+
+export const removeRegistration = async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const registration = await prisma.registration.findUnique({ where: { id } });
+        if (!registration) {
+            return res.status(404).json({ success: false, message: "Registration not found" });
+        }
+
+        await prisma.$transaction([
+            prisma.payment.deleteMany({ where: { registrationId: id } }),
+            prisma.registration.delete({ where: { id } }),
+        ]);
+        res.json({ success: true, message: "Team removed from this slot" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Failed to remove team" });
     }
 };

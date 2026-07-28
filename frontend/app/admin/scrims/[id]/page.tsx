@@ -20,6 +20,7 @@ import {
   updateSlotStatusRequest,
   releaseSlotRoomRequest,
   getRegistrationsBySlotRequest,
+  removeRegistrationRequest,
   type AdminRegistration,
 } from "@/services/admin";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -41,6 +42,7 @@ export default function ManageScrimPage() {
 
   const [expandedSlotId, setExpandedSlotId] = useState<number | null>(null);
   const [slotRegistrations, setSlotRegistrations] = useState<Record<number, AdminRegistration[]>>({});
+  const [removingRegistrationId, setRemovingRegistrationId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !user.isAdmin)) {
@@ -72,9 +74,11 @@ export default function ManageScrimPage() {
         fee: scrim.fee,
         date: scrim.date,
         image: scrim.image,
+        prizePool: scrim.prizePool,
         rules: scrim.rules,
         maxTeams: scrim.maxTeams,
       });
+
       showToast("Changes saved.", "success");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Failed to save", "error");
@@ -165,6 +169,24 @@ export default function ManageScrimPage() {
     }
   };
 
+  const handleRemoveRegistration = async (slotId: number, registration: AdminRegistration) => {
+    if (!window.confirm(`Remove ${registration.teamName} from this slot? This cannot be undone.`)) return;
+    setRemovingRegistrationId(registration.id);
+    try {
+      await removeRegistrationRequest(registration.id);
+      setSlotRegistrations((prev) => ({
+        ...prev,
+        [slotId]: (prev[slotId] ?? []).filter((item) => item.id !== registration.id),
+      }));
+      showToast(`${registration.teamName} was removed.`, "success");
+      loadScrim();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to remove team", "error");
+    } finally {
+      setRemovingRegistrationId(null);
+    }
+  };
+
   if (!user || !user.isAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
@@ -186,7 +208,7 @@ export default function ManageScrimPage() {
 
   return (
     <main className="min-h-screen bg-background bg-tactical-grid">
-      <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 sm:py-12">
         <button
           onClick={() => router.push("/admin")}
           className="mb-8 flex items-center gap-2 border border-border bg-panel px-5 py-2.5 font-mono text-sm text-muted-foreground transition hover:border-cyan hover:text-cyan"
@@ -195,7 +217,7 @@ export default function ManageScrimPage() {
           Admin Dashboard
         </button>
 
-        <div className="border border-border bg-panel p-8">
+        <div className="border border-border bg-panel p-4 sm:p-8">
           <h1 className="font-display text-3xl font-bold uppercase text-foreground">
             Manage Lobby
           </h1>
@@ -239,6 +261,33 @@ export default function ManageScrimPage() {
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                  Prize Pool (e.g. ₹5,000 / 1000 Diamonds)
+                </label>
+                <input
+                  value={scrim.prizePool || ""}
+                  onChange={(e) => update("prizePool", e.target.value)}
+                  placeholder="₹5,000"
+                  className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                  Tournament Poster URL / Image
+                </label>
+                <input
+                  value={scrim.image || ""}
+                  onChange={(e) => update("image", e.target.value)}
+                  placeholder="https://..."
+                  className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
+                />
+              </div>
+            </div>
+
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -289,7 +338,7 @@ export default function ManageScrimPage() {
           </div>
         </div>
 
-        <div className="mt-6 border border-border bg-panel p-8">
+        <div className="mt-6 border border-border bg-panel p-4 sm:p-8">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-xl font-bold uppercase text-foreground">
               Time Slots
@@ -420,6 +469,7 @@ export default function ManageScrimPage() {
                                   <th className="pb-2 pr-4">Phone</th>
                                   <th className="pb-2 pr-4">Code</th>
                                   <th className="pb-2">Payment</th>
+                                  <th className="pb-2 pl-4">Action</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -434,6 +484,17 @@ export default function ManageScrimPage() {
                                       <span className={reg.paymentStatus === "PAID" ? "text-cyan" : "text-amber"}>
                                         {reg.paymentStatus}
                                       </span>
+                                    </td>
+                                    <td className="py-2 pl-4">
+                                      <button
+                                        onClick={() => handleRemoveRegistration(slot.id, reg)}
+                                        disabled={removingRegistrationId === reg.id}
+                                        className="inline-flex items-center gap-1 border border-destructive/50 px-2 py-1 text-destructive transition hover:bg-destructive hover:text-void disabled:opacity-50"
+                                        aria-label={`Remove ${reg.teamName}`}
+                                      >
+                                        <Trash2 size={13} />
+                                        {removingRegistrationId === reg.id ? "Removing" : "Remove"}
+                                      </button>
                                     </td>
                                   </tr>
                                 ))}

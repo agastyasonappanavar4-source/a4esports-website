@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Sun, Moon, LogOut, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
+import Navbar from "@/components/layout/Navbar";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen bg-background bg-tactical-grid">
+      <Navbar />
       <div className="mx-auto max-w-2xl px-6 py-12">
         <h1 className="font-display text-4xl font-bold uppercase text-foreground">
           Settings

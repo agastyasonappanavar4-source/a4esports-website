@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getMyRegistrations, type MyRegistration } from "@/services/registrations";
 import { slotTimeLabel } from "@/lib/slotTime";
 import { Skeleton } from "@/components/ui/Skeleton";
+import Navbar from "@/components/layout/Navbar";
 
 export default function MyMatchesPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function MyMatchesPage() {
 
   return (
     <main className="min-h-screen bg-background bg-tactical-grid">
+      <Navbar />
       <div className="mx-auto max-w-5xl px-6 py-12">
         <button
           onClick={() => router.push("/")}

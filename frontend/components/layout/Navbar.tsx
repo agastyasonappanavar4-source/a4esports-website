@@ -31,26 +31,29 @@ export default function Navbar() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <header className="sticky top-0 z-50 border-b border-border bg-panel/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <div className="flex items-center gap-4">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-5">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="rounded-md p-2 text-foreground transition hover:bg-panel-2"
+              aria-label="Open menu"
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-border/80 bg-panel-2 text-foreground transition hover:border-cyan hover:text-cyan"
             >
-              <Menu size={22} />
+              <Menu size={20} />
             </button>
 
-            <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center bg-ember font-display text-lg font-bold text-void [clip-path:polygon(0_0,calc(100%-8px)_0,100%_8px,100%_100%,8px_100%,0_calc(100%-8px))]">
-                FF
-              </div>
+            <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
+              <img
+                src="/logo.jpg"
+                alt="A4esports Logo"
+                className="h-9 w-9 sm:h-10 sm:w-10 object-cover rounded-md sm:rounded-lg border border-border/80"
+              />
 
               <div>
-                <h1 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
-                  FF Scrims
+                <h1 className="font-display text-base sm:text-xl font-bold uppercase tracking-wide text-foreground">
+                  A4esports
                 </h1>
-                <p className="-mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Competitive Platform · IN
+                <p className="-mt-1 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Competitive Platform
                 </p>
               </div>
             </Link>
@@ -66,7 +69,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <button
               onClick={handleBrowseClick}
               className="hidden font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground transition hover:text-cyan sm:block"
@@ -77,7 +80,9 @@ export default function Navbar() {
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
-              className="border border-border p-2.5 text-muted-foreground transition hover:border-cyan hover:text-cyan"
+              className={`border border-border p-2.5 text-muted-foreground transition hover:border-cyan hover:text-cyan ${
+                user ? "" : "hidden sm:block"
+              }`}
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -103,14 +108,14 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="border border-border px-5 py-2 font-display text-sm font-semibold uppercase tracking-wide text-foreground transition hover:border-cyan hover:text-cyan"
+                  className="border border-border px-3 sm:px-5 py-2 font-display text-xs sm:text-sm font-semibold uppercase tracking-wide text-foreground transition hover:border-cyan hover:text-cyan"
                 >
                   Login
                 </Link>
 
                 <Link
                   href="/register"
-                  className="bg-ember px-5 py-2 font-display text-sm font-semibold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-8px)_0,100%_8px,100%_100%,8px_100%,0_calc(100%-8px))]"
+                  className="bg-ember px-3 sm:px-5 py-2 font-display text-xs sm:text-sm font-semibold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-8px)_0,100%_8px,100%_100%,8px_100%,0_calc(100%-8px))]"
                 >
                   Register
                 </Link>

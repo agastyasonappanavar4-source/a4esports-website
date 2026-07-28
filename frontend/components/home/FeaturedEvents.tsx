@@ -61,51 +61,64 @@ export default function FeaturedEvents({ scrims }: { scrims: Scrim[] }) {
                   return (
                     <div key={scrim.id} className="min-w-full">
                       <Link href={`/scrims/${scrim.id}`} className="grid cursor-pointer lg:grid-cols-2">
-                        <div className="flex flex-col justify-center p-10 lg:p-14">
-                          <span className="w-fit border border-cyan/40 bg-cyan/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-cyan">
+                        <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-14">
+                          <span className="w-fit border border-cyan/40 bg-cyan/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-cyan rounded-full">
                             {scrim.status === "OPEN" ? "Registration Open" : "Closed"}
                           </span>
 
-                          <h1 className="mt-6 font-display text-5xl md:text-6xl font-bold uppercase leading-[1.05] text-foreground">
+                          <h1 className="mt-4 sm:mt-6 font-display text-3xl sm:text-5xl md:text-6xl font-bold uppercase leading-[1.05] text-foreground">
                             {scrim.title}
                           </h1>
 
-                          <p className="mt-2 font-mono text-sm uppercase tracking-widest text-muted-foreground">
+                          <p className="mt-2 font-mono text-xs sm:text-sm uppercase tracking-widest text-muted-foreground">
                             {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · {formattedDate}
                             {openSlotLabels && ` · ${openSlotLabels}`}
                           </p>
 
-                          <div className="mt-8 flex gap-8 font-mono text-sm">
+                          <div className="mt-6 sm:mt-8 flex gap-6 sm:gap-8 font-mono text-sm">
                             <div>
                               <div className="flex items-center gap-2 text-muted-foreground">
-                                <Trophy size={16} className="text-amber" />
-                                Teams
+                                <Trophy size={16} className="text-amber-400" />
+                                Prize Pool
                               </div>
-                              <p className="mt-1 text-xl font-semibold text-foreground">{scrim.maxTeams}</p>
+                              <p className="mt-1 text-lg sm:text-xl font-semibold text-amber-400">
+                                {scrim.prizePool || "TBD"}
+                              </p>
                             </div>
                             <div>
                               <div className="flex items-center gap-2 text-muted-foreground">
-                                <Ticket size={16} className="text-ember" />
+                                <Ticket size={16} className="text-cyan" />
                                 Entry
                               </div>
-                              <p className="mt-1 text-xl font-semibold text-foreground">
+                              <p className="mt-1 text-lg sm:text-xl font-semibold text-foreground">
                                 {scrim.fee === 0 ? "FREE" : `₹${scrim.fee}`}
                               </p>
                             </div>
                           </div>
 
-                          <span className="mt-10 w-fit bg-ember px-8 py-3.5 font-display font-bold uppercase tracking-wide text-void transition group-hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-12px)_0,100%_12px,100%_100%,12px_100%,0_calc(100%-12px))]">
+                          <span className="mt-6 sm:mt-10 w-fit bg-cyan px-6 sm:px-8 py-3 font-display text-xs sm:text-sm font-bold uppercase tracking-wide text-void transition group-hover:bg-cyan/90 rounded-lg">
                             View & Register
                           </span>
                         </div>
 
-                        <div className="relative hidden min-h-105 items-center justify-center overflow-hidden border-l border-border bg-void lg:flex">
-                          <div className="absolute inset-0 bg-tactical-grid opacity-40" />
-                          <div className="absolute inset-0 bg-hero-glow" />
-                          <span className="relative font-display text-8xl font-bold uppercase tracking-tighter text-panel-2/60">
-                            {scrim.mode}
-                          </span>
+                        <div className="relative min-h-64 sm:min-h-80 lg:min-h-105 items-center justify-center overflow-hidden border-t lg:border-t-0 lg:border-l border-border bg-void flex">
+                          {scrim.image ? (
+                            <img
+                              src={scrim.image}
+                              alt={scrim.title}
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                          ) : (
+                            <>
+                              <div className="absolute inset-0 bg-tactical-grid opacity-40" />
+                              <div className="absolute inset-0 bg-hero-glow" />
+                              <span className="relative font-display text-6xl sm:text-8xl font-bold uppercase tracking-tighter text-panel-2/60">
+                                {scrim.mode}
+                              </span>
+                            </>
+                          )}
                         </div>
+
                       </Link>
                     </div>
                   );
@@ -117,14 +130,14 @@ export default function FeaturedEvents({ scrims }: { scrims: Scrim[] }) {
               <>
                 <button
                   onClick={scrollPrev}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 border border-border bg-panel/90 p-2.5 text-foreground transition hover:border-cyan hover:text-cyan"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 border border-border bg-panel/90 p-2.5 text-foreground transition hover:border-cyan hover:text-cyan hidden sm:block"
                 >
                   <ChevronLeft size={18} />
                 </button>
 
                 <button
                   onClick={scrollNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 border border-border bg-panel/90 p-2.5 text-foreground transition hover:border-cyan hover:text-cyan"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 border border-border bg-panel/90 p-2.5 text-foreground transition hover:border-cyan hover:text-cyan hidden sm:block"
                 >
                   <ChevronRight size={18} />
                 </button>

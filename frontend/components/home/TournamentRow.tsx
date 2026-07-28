@@ -2,7 +2,6 @@
 
 import TournamentCard from "./TournamentCard";
 import { Reveal } from "@/components/ui/Reveal";
-import { ChevronRight } from "lucide-react";
 
 interface Tournament {
   id: number;
@@ -11,6 +10,8 @@ interface Tournament {
   fee: number;
   maxTeams: number;
   date: string;
+  prizePool?: string;
+  image?: string;
 }
 
 interface TournamentRowProps {
@@ -21,27 +22,26 @@ interface TournamentRowProps {
 
 export default function TournamentRow({ title, tournaments, anchorId }: TournamentRowProps) {
   return (
-    <section id={anchorId} className="mx-auto mt-14 max-w-7xl scroll-mt-32 px-5">
+    <section id={anchorId} className="mx-auto mt-12 max-w-7xl scroll-mt-24 px-4 sm:px-6">
       <Reveal>
-        <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
-          <h2 className="font-display text-2xl font-bold uppercase tracking-wide text-foreground">
+        <div className="mb-5 flex items-center justify-between border-b border-border/80 pb-3">
+          <h2 className="font-display text-xl sm:text-2xl font-bold uppercase tracking-wide text-foreground">
             {title}
           </h2>
-          <button className="flex items-center gap-1 font-mono text-xs uppercase tracking-widest text-cyan transition hover:text-ember">
-            View All
-            <ChevronRight size={16} />
-          </button>
+          <span className="font-mono text-xs text-muted-foreground">
+            {tournaments.length} Available
+          </span>
         </div>
       </Reveal>
 
       {tournaments.length === 0 ? (
-        <p className="border border-dashed border-border py-10 text-center font-mono text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border/70 bg-panel/30 py-8 text-center font-mono text-sm text-muted-foreground">
           No tournaments in this category yet — check back soon.
         </p>
       ) : (
-        <div className="flex gap-6 overflow-x-auto pb-5 scrollbar-hide">
+        <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 scrollbar-hide">
           {tournaments.map((tournament, index) => (
-            <Reveal key={tournament.id} delay={index * 90} className="shrink-0">
+            <Reveal key={tournament.id} delay={index * 80} className="shrink-0 w-[280px] sm:w-[320px]">
               <TournamentCard
                 id={tournament.id}
                 title={tournament.title}
@@ -49,6 +49,8 @@ export default function TournamentRow({ title, tournaments, anchorId }: Tourname
                 fee={tournament.fee}
                 maxTeams={tournament.maxTeams}
                 date={tournament.date}
+                prizePool={tournament.prizePool}
+                image={tournament.image}
               />
             </Reveal>
           ))}

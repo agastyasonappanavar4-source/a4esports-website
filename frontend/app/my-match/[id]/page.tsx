@@ -15,6 +15,7 @@ import { getRegistrationDetails, type RegistrationDetails } from "@/services/reg
 import { combineDateWithSlot, slotTimeLabel } from "@/lib/slotTime";
 import { getCountdown } from "@/lib/countdown";
 import { Skeleton } from "@/components/ui/Skeleton";
+import Navbar from "@/components/layout/Navbar";
 
 export default function MyMatchDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -88,6 +89,7 @@ export default function MyMatchDetailPage() {
 
   return (
     <main className="min-h-screen bg-background bg-tactical-grid">
+      <Navbar />
       <div className="mx-auto max-w-7xl px-6 py-10">
         <button
           onClick={() => router.push("/my-match")}

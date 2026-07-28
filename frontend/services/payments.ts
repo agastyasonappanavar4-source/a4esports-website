@@ -1,11 +1,11 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function createOrder(scrimId: number) {
+export async function createOrder(registrationId: number) {
   const response = await fetch(`${API_URL}/api/payments/create-order`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ scrimId }),
+    body: JSON.stringify({ registrationId }),
   });
 
   const data = await response.json();
@@ -22,7 +22,6 @@ interface VerifyPaymentPayload {
   razorpay_payment_id: string;
   razorpay_signature: string;
   registrationId: number;
-  amount: number;
   method: string;
 }
 

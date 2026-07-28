@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getMyRegistrations, type MyRegistration } from "@/services/registrations";
 import { combineDateWithSlot, slotTimeLabel } from "@/lib/slotTime";
 import { getCountdown } from "@/lib/countdown";
+import Navbar from "@/components/layout/Navbar";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function NotificationsPage() {
 
   return (
     <main className="min-h-screen bg-background bg-tactical-grid">
+      <Navbar />
       <div className="mx-auto max-w-3xl px-6 py-12">
         <button
           onClick={() => router.push("/")}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Trophy, Users, Calendar, IndianRupee, ShieldCheck, Clock } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
+import { Trophy, Users, Calendar, IndianRupee, ShieldCheck, Clock, ArrowLeft } from "lucide-react";
 import { getScrimById } from "@/lib/scrims";
 import { slotTimeLabel } from "@/lib/slotTime";
 import { CornerFrame } from "@/components/ui/CornerFrame";
@@ -31,40 +32,64 @@ export default async function TournamentPage({
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="relative flex h-80 w-full items-end overflow-hidden border-b border-border bg-void bg-tactical-grid">
-        <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/10 to-transparent" />
-        <div className="relative mx-auto flex w-full max-w-7xl items-end justify-between px-6 pb-10">
+      <Navbar />
+
+      {/* Banner / Poster Header */}
+      <div className="relative h-72 sm:h-96 w-full flex items-end overflow-hidden border-b border-border bg-void">
+        {scrim.image ? (
+          <img
+            src={scrim.image}
+            alt={scrim.title}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-tactical-grid bg-hero-glow" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col justify-end px-4 sm:px-6 pb-6 sm:pb-10">
+          <Link
+            href="/"
+            className="mb-4 flex items-center gap-2 font-mono text-xs text-muted-foreground hover:text-cyan transition w-fit bg-panel/80 px-3 py-1.5 rounded-md border border-border"
+          >
+            <ArrowLeft size={14} />
+            Back to Home
+          </Link>
+
           <div>
-            <span className="flex w-fit items-center gap-2 border border-ember/40 bg-ember/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-ember">
-              <span className="h-1.5 w-1.5 rounded-full bg-ember animate-pulse-dot" />
+            <span className="flex w-fit items-center gap-2 rounded-full border border-cyan/40 bg-cyan/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-cyan backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse-dot" />
               {scrim.status === "OPEN" ? "Registration Open" : "Closed"}
             </span>
-            <h1 className="mt-5 font-display text-5xl md:text-6xl font-bold uppercase leading-tight text-foreground">
+            <h1 className="mt-3 font-display text-3xl sm:text-5xl md:text-6xl font-bold uppercase leading-tight text-foreground drop-shadow-md">
               {scrim.title}
             </h1>
-            <p className="mt-2 font-mono text-sm uppercase tracking-widest text-cyan">
+            <p className="mt-1 font-mono text-xs sm:text-sm font-semibold uppercase tracking-wider text-cyan">
               {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="space-y-8 lg:col-span-2">
-            <div className="flex flex-wrap gap-3">
-              <span className="border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
-                {scrim.fee === 0 ? "Free Entry" : `₹${scrim.fee} Entry`}
-              </span>
-              <span className="border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
-                {scrim.maxTeams} Teams
-              </span>
-              <span className="border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
-                {formattedDate}
-              </span>
-            </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
+        <div className="mb-6 flex flex-wrap gap-3">
+          <span className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-4 py-2 font-mono text-sm font-bold text-amber-400">
+            🏆 Prize Pool: {scrim.prizePool || "TBD"}
+          </span>
+          <span className="rounded-lg border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
+            {scrim.fee === 0 ? "Free Entry" : `₹${scrim.fee} Entry`}
+          </span>
+          <span className="rounded-lg border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
+            {scrim.maxTeams} Teams
+          </span>
+          <span className="rounded-lg border border-border bg-panel px-4 py-2 font-mono text-sm text-foreground">
+            {formattedDate}
+          </span>
+        </div>
 
-            <div className="relative border border-border bg-panel p-8">
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="space-y-8 lg:col-span-2 order-2 lg:order-1">
+            <div className="relative rounded-xl border border-border bg-panel p-6 sm:p-8">
               <CornerFrame tone="cyan" show="always" />
               <h2 className="mb-6 font-display text-2xl font-bold uppercase text-foreground">
                 Tournament Rules
@@ -74,7 +99,7 @@ export default async function TournamentPage({
                 <ul className="space-y-3 font-mono text-sm text-muted-foreground">
                   {rulesList.map((rule, i) => (
                     <li key={i} className="flex gap-3">
-                      <ShieldCheck size={16} className="mt-0.5 shrink-0 text-ember" />
+                      <ShieldCheck size={16} className="mt-0.5 shrink-0 text-cyan" />
                       {rule}
                     </li>
                   ))}
@@ -87,34 +112,33 @@ export default async function TournamentPage({
             </div>
           </div>
 
-          <div>
-            <div className="border border-border bg-panel p-6">
+          <div className="space-y-6 order-1 lg:order-2">
+            <div className="rounded-xl border border-border bg-panel p-6">
               <h2 className="mb-6 font-display text-xl font-bold uppercase text-foreground">
                 Tournament Info
               </h2>
 
               <div className="space-y-4 font-mono text-sm text-muted-foreground">
                 <div className="flex items-center gap-3">
-                  <Trophy size={18} className="text-amber" />
-                  Prize pool announced soon
+                  <Trophy size={18} className="text-amber-400" />
+                  <span className="font-bold text-amber-400">Prize Pool: {scrim.prizePool || "TBD"}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Users size={18} className="text-cyan" />
                   {scrim.maxTeams} Teams
                 </div>
                 <div className="flex items-center gap-3">
-                  <Calendar size={18} className="text-ember" />
+                  <Calendar size={18} className="text-amber-400" />
                   {formattedDate}
                 </div>
                 <div className="flex items-center gap-3">
-                  <IndianRupee size={18} className="text-ember" />
+                  <IndianRupee size={18} className="text-cyan" />
                   {scrim.fee === 0 ? "Free Entry" : `₹${scrim.fee}`}
                 </div>
               </div>
-
             </div>
 
-            <div className="mt-6 border border-border bg-panel p-6">
+            <div className="mt-6 rounded-xl border border-border bg-panel p-6">
               <h2 className="mb-2 font-display text-xl font-bold uppercase text-foreground">
                 Choose Your Time Slot
               </h2>

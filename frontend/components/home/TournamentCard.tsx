@@ -11,6 +11,8 @@ interface TournamentCardProps {
   maxTeams: number;
   mode: string;
   date: string;
+  prizePool?: string;
+  image?: string;
 }
 
 export default function TournamentCard({
@@ -20,6 +22,8 @@ export default function TournamentCard({
   maxTeams,
   mode,
   date,
+  prizePool = "TBD",
+  image,
 }: TournamentCardProps) {
   const entry = fee === 0 ? "FREE" : `₹${fee}`;
 
@@ -30,82 +34,81 @@ export default function TournamentCard({
   });
 
   return (
-    <Link href={`/scrims/${id}`} className="cursor-pointer">
-      <div className="btn-press group relative min-w-77.5 border border-border bg-panel transition-all duration-300 hover:-translate-y-1 hover:border-ember/50">
-        <CornerFrame tone="ember" />
+    <Link href={`/scrims/${id}`} className="cursor-pointer block">
+      <div className="btn-press group relative w-full rounded-xl border border-border bg-panel overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-cyan/50 hover:shadow-lg hover:shadow-cyan/10">
+        <CornerFrame tone="cyan" />
 
-        {/* Banner */}
-        <div className="relative h-44 overflow-hidden bg-void bg-tactical-grid">
-          <div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent" />
+        {/* Banner / Poster */}
+        <div className="relative h-48 w-full overflow-hidden bg-void">
+          {image ? (
+            <img
+              src={image}
+              alt={title}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="h-full w-full bg-tactical-grid bg-void" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent" />
 
-          <div className="absolute left-4 top-4 flex items-center gap-1.5 border border-ember/40 bg-void/80 px-2.5 py-1 font-mono text-[11px] uppercase tracking-widest text-ember">
-            <span className="h-1.5 w-1.5 rounded-full bg-ember animate-pulse-dot" />
-            Live
+          <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-cyan/40 bg-void/80 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-cyan backdrop-blur-md">
+            <span className="h-2 w-2 rounded-full bg-cyan animate-pulse-dot" />
+            Live Scrim
           </div>
 
-          <div className="absolute bottom-4 left-4 right-4">
-            <h2 className="font-display text-2xl font-bold uppercase leading-tight text-foreground">
+          <div className="absolute bottom-3 left-4 right-4">
+            <h2 className="font-display text-xl font-bold uppercase leading-tight text-foreground drop-shadow-md">
               {title}
             </h2>
-            <p className="mt-1 font-mono text-xs uppercase tracking-widest text-cyan">
-              {mode}
+            <p className="mt-0.5 font-mono text-xs font-semibold uppercase tracking-wider text-cyan">
+              {mode} Mode
             </p>
           </div>
         </div>
 
         {/* Card Content */}
-        <div className="space-y-4 p-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="border border-border bg-panel-2 p-3">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Trophy size={15} className="text-amber" />
-                <span className="font-mono text-[11px] uppercase tracking-widest">
+        <div className="space-y-4 p-4">
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-lg border border-border/80 bg-panel-2/60 p-2.5">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Trophy size={14} className="text-amber-400" />
+                <span className="font-mono text-[10px] uppercase tracking-wider">
                   Prize Pool
                 </span>
               </div>
-              <p className="mt-2 font-mono font-semibold text-foreground">
-                TBA
+              <p className="mt-1 font-mono text-sm font-bold text-amber-400 truncate">
+                {prizePool}
               </p>
             </div>
 
-            <div className="border border-border bg-panel-2 p-3">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <IndianRupee size={15} className="text-ember" />
-                <span className="font-mono text-[11px] uppercase tracking-widest">
+            <div className="rounded-lg border border-border/80 bg-panel-2/60 p-2.5">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <IndianRupee size={14} className="text-cyan" />
+                <span className="font-mono text-[10px] uppercase tracking-wider">
                   Entry
                 </span>
               </div>
-              <p className="mt-2 font-mono font-semibold text-foreground">
+              <p className="mt-1 font-mono text-sm font-bold text-foreground">
                 {entry}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between font-mono text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Users size={15} className="text-cyan" />
-              {maxTeams} Teams
+          <div className="flex items-center justify-between font-mono text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Users size={14} className="text-cyan" />
+              <span>{maxTeams} Teams</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock3 size={15} className="text-ember" />
-              {formattedDate}
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-2 flex justify-between font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-              <span>Slots Filled</span>
-              <span>{maxTeams}</span>
-            </div>
-            <div className="h-1.5 overflow-hidden bg-panel-2">
-              <div className="h-full w-2/3 bg-ember transition-all duration-500 group-hover:w-[70%]" />
+            <div className="flex items-center gap-1.5">
+              <Clock3 size={14} className="text-amber-400" />
+              <span>{formattedDate}</span>
             </div>
           </div>
 
-          <div className="flex w-full items-center justify-center gap-2 border border-ember/40 bg-ember/10 py-3 font-display font-bold uppercase tracking-wide text-ember transition-all duration-300 group-hover:bg-ember group-hover:text-void">
-            View Tournament
+          <div className="flex w-full items-center justify-center gap-2 rounded-lg border border-cyan/40 bg-cyan/10 py-2.5 font-display text-xs font-bold uppercase tracking-wider text-cyan transition-all duration-300 group-hover:bg-cyan group-hover:text-void">
+            Register Now
             <ArrowRight
-              size={16}
+              size={15}
               className="transition-transform duration-300 group-hover:translate-x-1"
             />
           </div>

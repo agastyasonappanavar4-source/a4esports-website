@@ -13,7 +13,9 @@ import {
   Pencil,
   Trash2,
   Power,
+  Sparkles,
 } from "lucide-react";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
 import { getScrims, type Scrim } from "@/lib/scrims";
@@ -103,13 +105,24 @@ export default function AdminDashboardPage() {
             </h1>
           </div>
 
-          <Link
-            href="/admin/scrims/new"
-            className="flex items-center gap-2 bg-ember px-6 py-3 font-display font-bold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,10px_100%,0_calc(100%-10px))]"
-          >
-            <Plus size={18} />
-            New Tournament
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/admin/announcements"
+              className="flex items-center gap-2 border border-cyan/40 bg-cyan/10 px-5 py-3 font-display font-bold uppercase tracking-wide text-cyan transition hover:bg-cyan/20 rounded-lg"
+            >
+              <Sparkles size={18} />
+              Special Event Popups
+            </Link>
+
+            <Link
+              href="/admin/scrims/new"
+              className="flex items-center gap-2 bg-ember px-6 py-3 font-display font-bold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,10px_100%,0_calc(100%-10px))]"
+            >
+              <Plus size={18} />
+              New Tournament
+            </Link>
+          </div>
+
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

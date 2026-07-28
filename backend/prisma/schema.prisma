@@ -38,6 +38,14 @@ model User {
   password      String
   isAdmin       Boolean          @default(false)
 
+  inGameName    String?
+  uid           String?
+  avatar        String?
+  phone         String?
+  googleId      String?
+  resetToken    String?
+  resetTokenExpiry DateTime?
+
   registrations Registration[]
 
   createdAt     DateTime         @default(now())
@@ -52,6 +60,7 @@ model Scrim {
   fee             Int
   date            DateTime
   image           String
+  prizePool       String?           @default("TBD")
   rules           String            @db.Text
   maxTeams        Int
 
@@ -62,6 +71,18 @@ model Scrim {
 
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  image       String?
+  scrimId     Int?
+  isPopup     Boolean  @default(true)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Slot {

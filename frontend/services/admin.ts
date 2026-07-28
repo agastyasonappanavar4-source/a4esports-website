@@ -33,10 +33,12 @@ export interface ScrimInput {
   fee: number;
   date: string;
   image: string;
+  prizePool?: string;
   rules: string;
   maxTeams: number;
   slots?: SlotTime[];
 }
+
 
 export async function createScrimRequest(input: ScrimInput): Promise<Scrim> {
   const response = await fetch(`${API_URL}/api/scrims`, {
@@ -184,4 +186,12 @@ export async function getRegistrationsBySlotRequest(
   });
   const data = await handle(response);
   return data.data;
+}
+
+export async function removeRegistrationRequest(id: number) {
+  const response = await fetch(`${API_URL}/api/registrations/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  return handle(response);
 }

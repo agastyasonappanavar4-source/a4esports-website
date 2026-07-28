@@ -1,92 +1,57 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ShieldCheck, Zap, Trophy, Clock } from "lucide-react";
 
-interface StatItem {
-  target: number;
-  suffix: string;
-  prefix?: string;
-  label: string;
-}
-
-const stats: StatItem[] = [
-  { target: 15000, suffix: "+", label: "Players" },
-  { target: 900, suffix: "+", label: "Matches Hosted" },
-  { target: 5, suffix: "L+", prefix: "₹", label: "Prize Pool Paid" },
+const highlights = [
+  {
+    icon: ShieldCheck,
+    title: "Verified Scrims",
+    description: "Strict anti-cheat monitoring & fair play enforcement",
+  },
+  {
+    icon: Clock,
+    title: "Instant Room Details",
+    description: "Automated Room ID & Password released 15 mins prior",
+  },
+  {
+    icon: Trophy,
+    title: "Guaranteed Payouts",
+    description: "Direct reward distributions within 24 hours of match end",
+  },
+  {
+    icon: Zap,
+    title: "Seamless Registration",
+    description: "1-click slot reservation with instant team confirmation",
+  },
 ];
-
-function useCountUp(target: number, active: boolean, duration = 1400) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    if (!active) return;
-
-    let start: number | null = null;
-
-    const step = (timestamp: number) => {
-      if (start === null) start = timestamp;
-      const progress = Math.min((timestamp - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.floor(eased * target));
-
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        setValue(target);
-      }
-    };
-
-    const frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [active, target, duration]);
-
-  return value;
-}
-
-function StatCard({ stat }: { stat: StatItem }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(false);
-  const value = useCountUp(stat.target, active);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setActive(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.4 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={ref} className="bg-panel p-8 text-center">
-      <h2 className="font-mono text-4xl font-semibold text-ember">
-        {stat.prefix || ""}
-        {value.toLocaleString("en-IN")}
-        {stat.suffix}
-      </h2>
-      <p className="mt-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        {stat.label}
-      </p>
-    </div>
-  );
-}
 
 export default function Stats() {
   return (
-    <section className="border-b border-border bg-panel py-14">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-px bg-border md:grid-cols-3">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} stat={stat} />
-        ))}
+    <section className="border-y border-border/80 bg-panel/60 py-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {highlights.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.title}
+                className="group flex items-start gap-4 rounded-xl border border-border/60 bg-panel-2/40 p-4 transition-all duration-200 hover:border-cyan/50 hover:bg-panel-2/80"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-cyan/30 bg-cyan/10 text-cyan transition-transform group-hover:scale-105">
+                  <Icon size={22} />
+                </div>
+                <div>
+                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-foreground">
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 font-mono text-xs text-muted-foreground leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

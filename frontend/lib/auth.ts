@@ -32,6 +32,55 @@ export async function signupRequest(
   return handle(response);
 }
 
+export async function googleLoginRequest(payload: {
+  email: string;
+  name?: string;
+  googleId?: string;
+  avatar?: string;
+}) {
+  const response = await fetch(`${API_URL}/api/auth/google`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return handle(response);
+}
+
+export async function forgotPasswordRequest(email: string) {
+  const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  return handle(response);
+}
+
+export async function resetPasswordRequest(
+  email: string,
+  newPassword: string,
+  resetToken?: string
+) {
+  const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, newPassword, resetToken }),
+  });
+  return handle(response);
+}
+
+export async function updateProfileRequest(data: Record<string, any>) {
+  const response = await fetch(`${API_URL}/api/auth/profile`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handle(response);
+}
+
 export async function logoutRequest() {
   const response = await fetch(`${API_URL}/api/auth/logout`, {
     method: "POST",

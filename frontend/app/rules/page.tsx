@@ -1,4 +1,5 @@
 import { ShieldCheck } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
 
 const sections = [
   {
@@ -39,6 +40,7 @@ const sections = [
 export default function RulesPage() {
   return (
     <main className="min-h-screen bg-background bg-tactical-grid">
+      <Navbar />
       <div className="mx-auto max-w-4xl px-6 py-12">
         <span className="font-mono text-xs uppercase tracking-widest text-cyan">
           Platform Guidelines
@@ -47,7 +49,7 @@ export default function RulesPage() {
           Rules &amp; Fair Play
         </h1>
         <p className="mt-3 font-mono text-sm text-muted-foreground">
-          These rules apply across all FF Scrims tournaments. Individual events may add extra rules on their tournament page.
+          These rules apply across all A4esports tournaments. Individual events may add extra rules on their tournament page.
         </p>
 
         <div className="mt-10 space-y-6">

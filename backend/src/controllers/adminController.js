@@ -7,7 +7,7 @@ export const getDashboardStats = async (req, res) => {
                 prisma.user.count(),
                 prisma.scrim.count(),
                 prisma.scrim.count({ where: { status: "OPEN" } }),
-                prisma.registration.count(),
+                prisma.registration.count({ where: { paymentStatus: "PAID" } }),
                 prisma.registration.findMany({
                     where: { paymentStatus: "PAID" },
                     include: { scrim: { select: { fee: true } } },

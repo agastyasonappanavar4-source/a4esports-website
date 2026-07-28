@@ -3,7 +3,13 @@ import prisma from "../config/prisma.js";
 const slotInclude = {
     slots: {
         include: {
-            _count: { select: { registrations: true } },
+            _count: {
+                select: {
+                    registrations: {
+                        where: { paymentStatus: "PAID" },
+                    },
+                },
+            },
         },
         orderBy: { time: "asc" },
     },
@@ -62,7 +68,7 @@ export const getScrimById = async (req, res) => {
 // CREATE scrim (lobby). Optionally accepts `slots: string[]` of SlotTime values to create alongside it.
 export const createScrim = async (req, res) => {
     try {
-        const { title, mode, fee, date, image, rules, maxTeams, slots } = req.body;
+        const { title, mode, fee, date, image, prizePool, rules, maxTeams, slots } = req.body;
 
         if (!title || !mode || !date || !maxTeams) {
             return res.status(400).json({
@@ -78,6 +84,7 @@ export const createScrim = async (req, res) => {
                 fee: Number(fee) || 0,
                 date: new Date(date),
                 image: image || "",
+                prizePool: prizePool || "TBD",
                 rules: rules || "",
                 maxTeams: Number(maxTeams),
                 ...(Array.isArray(slots) && slots.length > 0 && {
@@ -104,7 +111,7 @@ export const createScrim = async (req, res) => {
 export const updateScrim = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, mode, fee, date, image, rules, maxTeams } = req.body;
+        const { title, mode, fee, date, image, prizePool, rules, maxTeams } = req.body;
 
         const scrim = await prisma.scrim.update({
             where: { id: Number(id) },
@@ -114,6 +121,7 @@ export const updateScrim = async (req, res) => {
                 ...(fee !== undefined && { fee: Number(fee) }),
                 ...(date !== undefined && { date: new Date(date) }),
                 ...(image !== undefined && { image }),
+                ...(prizePool !== undefined && { prizePool }),
                 ...(rules !== undefined && { rules }),
                 ...(maxTeams !== undefined && { maxTeams: Number(maxTeams) }),
             },
@@ -135,21 +143,25 @@ export const updateScrim = async (req, res) => {
 export const deleteScrim = async (req, res) => {
     try {
         const { id } = req.params;
+        const scrimId = Number(id);
 
-        const registrationCount = await prisma.registration.count({
-            where: { scrimId: Number(id) },
+        const existingScrim = await prisma.scrim.findUnique({
+            where: { id: scrimId },
+            select: { id: true },
         });
-
-        if (registrationCount > 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Cannot delete a scrim that already has registrations. Close it instead.",
-            });
+        if (!existingScrim) {
+            return res.status(404).json({ success: false, message: "Scrim not found" });
         }
 
-        await prisma.scrim.delete({ where: { id: Number(id) } });
+        // An admin deleting a lobby also removes its payment and registration records.
+        // Payments are deleted first because they reference registrations.
+        await prisma.$transaction([
+            prisma.payment.deleteMany({ where: { registration: { scrimId } } }),
+            prisma.registration.deleteMany({ where: { scrimId } }),
+            prisma.scrim.delete({ where: { id: scrimId } }),
+        ]);
 
-        res.json({ success: true, message: "Scrim deleted." });
+        res.json({ success: true, message: "Scrim and its registrations deleted." });
     } catch (error) {
         console.error(error);
 

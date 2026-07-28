@@ -6,6 +6,7 @@ import {
     getMyRegistrations,
     getRegistrationsByScrim,
     getRegistrationsBySlot,
+    removeRegistration,
 } from "../controllers/registrationController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { verifyAdmin } from "../middleware/adminMiddleware.js";
@@ -16,6 +17,7 @@ router.post("/", verifyToken, registerTeam);
 router.get("/me", verifyToken, getMyRegistrations);
 router.get("/scrim/:scrimId", verifyToken, verifyAdmin, getRegistrationsByScrim);
 router.get("/slot/:slotId", verifyToken, verifyAdmin, getRegistrationsBySlot);
+router.delete("/:id", verifyToken, verifyAdmin, removeRegistration);
 router.get("/:id", getRegistrationById);
 router.get("/:id/details", getRegistrationDetails);
 
