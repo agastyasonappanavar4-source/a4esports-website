@@ -15,6 +15,9 @@ import {
     releaseSlotRoom,
 } from "../controllers/slotController.js";
 
+import { verifyToken } from "../middleware/authMiddleware.js";
+import { verifyAdmin } from "../middleware/adminMiddleware.js";
+
 const router = express.Router();
 
 // Public routes
@@ -22,16 +25,16 @@ router.get("/", getAllScrims);
 router.get("/:id", getScrimById);
 
 // Admin routes - scrim (lobby)
-router.post("/", createScrim);
-router.put("/:id", updateScrim);
-router.delete("/:id", deleteScrim);
-router.patch("/:id/status", updateScrimStatus);
+router.post("/", verifyToken, verifyAdmin, createScrim);
+router.put("/:id", verifyToken, verifyAdmin, updateScrim);
+router.delete("/:id", verifyToken, verifyAdmin, deleteScrim);
+router.patch("/:id/status", verifyToken, verifyAdmin, updateScrimStatus);
 
 // Admin routes - slots (time slots under a lobby)
-router.post("/:scrimId/slots", createSlot);
-router.put("/slots/:id", updateSlot);
-router.delete("/slots/:id", deleteSlot);
-router.patch("/slots/:id/status", updateSlotStatus);
-router.patch("/slots/:id/room", releaseSlotRoom);
+router.post("/:scrimId/slots", verifyToken, verifyAdmin, createSlot);
+router.put("/slots/:id", verifyToken, verifyAdmin, updateSlot);
+router.delete("/slots/:id", verifyToken, verifyAdmin, deleteSlot);
+router.patch("/slots/:id/status", verifyToken, verifyAdmin, updateSlotStatus);
+router.patch("/slots/:id/room", verifyToken, verifyAdmin, releaseSlotRoom);
 
 export default router;

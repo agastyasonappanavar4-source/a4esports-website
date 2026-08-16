@@ -8,6 +8,8 @@ import TournamentRow from "@/components/home/TournamentRow";
 
 import { getScrims, type Scrim } from "@/lib/scrims";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const scrims = await getScrims();
 

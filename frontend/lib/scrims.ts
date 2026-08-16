@@ -30,8 +30,12 @@ export interface Scrim {
 
 
 export async function getScrims(): Promise<Scrim[]> {
-  const response = await apiRequest("/api/scrims");
-  return response.data;
+  try {
+    const response = await apiRequest("/api/scrims");
+    return response.data || [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getScrimById(id: number): Promise<Scrim | null> {
