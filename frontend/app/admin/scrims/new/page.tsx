@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
-import { createScrimRequest, type ScrimInput } from "@/services/admin";
+import { createScrimRequest, uploadImageRequest, type ScrimInput } from "@/services/admin";
 import { BR_SLOT_TIMES, CS_SLOT_TIMES, slotTimeLabel, type SlotTime } from "@/lib/slotTime";
 
 export default function NewScrimPage() {
@@ -24,6 +24,7 @@ export default function NewScrimPage() {
   });
   const [selectedSlots, setSelectedSlots] = useState<SlotTime[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const availableSlots = form.mode === "BR" ? BR_SLOT_TIMES : CS_SLOT_TIMES;
 
@@ -41,6 +42,31 @@ export default function NewScrimPage() {
 
   const update = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Data = event.target?.result as string;
+      try {
+        const res = await uploadImageRequest(file.name, base64Data);
+        update("image", res.url);
+        showToast("Image uploaded successfully.", "success");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Failed to upload image", "error");
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.onerror = () => {
+      showToast("Failed to read file", "error");
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const toggleSlot = (time: SlotTime) => {
@@ -151,6 +177,27 @@ export default function NewScrimPage() {
                 onChange={(e) => update("date", e.target.value)}
                 className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
               />
+            </div>
+
+            <div>
+              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Tournament Poster (Upload Image)
+              </label>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="w-full border border-border bg-panel-2 p-3.5 font-mono text-sm text-foreground outline-none focus:border-cyan file:mr-4 file:py-1 file:px-3 file:border file:border-cyan/50 file:bg-cyan/10 file:text-cyan file:font-mono file:text-xs hover:file:bg-cyan/20"
+                />
+                {form.image && (
+                  <div className="shrink-0 flex items-center gap-2">
+                    <img src={form.image} alt="Preview" className="h-12 w-12 object-cover border border-border" />
+                    <span className="font-mono text-xs text-cyan truncate max-w-40">{form.image}</span>
+                  </div>
+                )}
+              </div>
+              {uploading && <p className="mt-1 font-mono text-xs text-amber animate-pulse">Uploading image...</p>}
             </div>
 
             <div>

@@ -15,7 +15,7 @@ declare global {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { signup, googleLogin } = useAuth();
+  const { signup, googleLogin, updateProfile } = useAuth();
   const { showToast } = useToast();
 
   const [username, setUsername] = useState("");
@@ -25,73 +25,53 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (window.google?.accounts?.id && googleClientId) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleGoogleCredentialResponse,
-        });
-        const container = document.getElementById("googleRegisterContainer");
-        if (container) {
-          window.google.accounts.id.renderButton(container, {
-            theme: "outline",
-            size: "large",
-            width: "100%",
-          });
-        }
-      } catch (err) {
-        console.error("Google button init error:", err);
-      }
-    }
-  }, []);
-
-  const handleGoogleCredentialResponse = async (response: any) => {
-    try {
-      setLoading(true);
-      const base64Url = response.credential.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
-      );
-      const payload = JSON.parse(jsonPayload);
-
-      await googleLogin({
-        email: payload.email,
-        name: payload.name,
-        googleId: payload.sub,
-        avatar: payload.picture,
-      });
-
-      showToast(`Welcome, ${payload.name || "Gamer"}! Account ready.`, "success");
-      router.push("/");
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Google sign-up failed.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Username modal states
+  const [usernameModalOpen, setUsernameModalOpen] = useState(false);
+  const [chosenUsername, setChosenUsername] = useState("");
+  const [usernameLoading, setUsernameLoading] = useState(false);
 
   const handleSimulatedGoogleLogin = async () => {
     const userEmail = prompt("Enter your Gmail address to Sign up with Google:");
     if (!userEmail || !userEmail.includes("@")) return;
     setLoading(true);
     try {
-      await googleLogin({
+      const loggedUser = await googleLogin({
         email: userEmail,
         name: userEmail.split("@")[0],
       });
       showToast("Registered & logged in with Google!", "success");
-      router.push("/");
+      setChosenUsername(loggedUser.username || userEmail.split("@")[0]);
+      setUsernameModalOpen(true);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Google sign-up failed", "error");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveUsername = async () => {
+    if (!chosenUsername.trim()) {
+      showToast("Username cannot be empty.", "error");
+      return;
+    }
+    setUsernameLoading(true);
+    try {
+      await updateProfile({ username: chosenUsername.trim() });
+      showToast("Username updated successfully!", "success");
+      setUsernameModalOpen(false);
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to update username", "error");
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
+
+  const handleSkipUsername = () => {
+    setUsernameModalOpen(false);
+    router.push("/");
+    router.refresh();
   };
 
   const handleRegister = async () => {

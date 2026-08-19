@@ -195,3 +195,17 @@ export async function removeRegistrationRequest(id: number) {
   });
   return handle(response);
 }
+
+export async function uploadImageRequest(
+  filename: string,
+  base64Data: string
+): Promise<{ success: boolean; url: string; message: string }> {
+  const response = await fetch(`${API_URL}/api/admin/upload`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename, base64Data }),
+  });
+  return handle(response);
+}
+

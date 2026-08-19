@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "A4esports — India's Competitive Free Fire Platform",
+  title: "A4 ESPORTS — India's Competitive Free Fire Platform",
   description:
     "Join daily custom rooms, free tournaments, and competitive Free Fire scrims. Built for serious mobile gamers.",
 };

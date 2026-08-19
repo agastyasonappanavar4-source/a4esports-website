@@ -49,7 +49,7 @@ export default function RulesPage() {
           Rules &amp; Fair Play
         </h1>
         <p className="mt-3 font-mono text-sm text-muted-foreground">
-          These rules apply across all A4esports tournaments. Individual events may add extra rules on their tournament page.
+          These rules apply across all A4 ESPORTS tournaments. Individual events may add extra rules on their tournament page.
         </p>
 
         <div className="mt-10 space-y-6">
@@ -60,9 +60,9 @@ export default function RulesPage() {
               </h2>
               <ul className="space-y-3 font-mono text-sm text-muted-foreground">
                 {section.rules.map((rule, i) => (
-                  <li key={i} className="flex gap-3">
-                    <ShieldCheck size={16} className="mt-0.5 shrink-0 text-ember" />
-                    {rule}
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="mt-0.5 shrink-0 text-ember font-bold select-none">✓</span>
+                    <span>{rule}</span>
                   </li>
                 ))}
               </ul>

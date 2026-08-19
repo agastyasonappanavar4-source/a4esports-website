@@ -21,6 +21,7 @@ import {
   releaseSlotRoomRequest,
   getRegistrationsBySlotRequest,
   removeRegistrationRequest,
+  uploadImageRequest,
   type AdminRegistration,
 } from "@/services/admin";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -33,6 +34,7 @@ export default function ManageScrimPage() {
 
   const [scrim, setScrim] = useState<Scrim | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Per-slot room-release input state, keyed by slot id.
   const [roomInputs, setRoomInputs] = useState<Record<number, { roomId: string; roomPassword: string }>>({});
@@ -43,6 +45,31 @@ export default function ManageScrimPage() {
   const [expandedSlotId, setExpandedSlotId] = useState<number | null>(null);
   const [slotRegistrations, setSlotRegistrations] = useState<Record<number, AdminRegistration[]>>({});
   const [removingRegistrationId, setRemovingRegistrationId] = useState<number | null>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Data = event.target?.result as string;
+      try {
+        const res = await uploadImageRequest(file.name, base64Data);
+        update("image", res.url);
+        showToast("Image uploaded successfully.", "success");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Failed to upload image", "error");
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.onerror = () => {
+      showToast("Failed to read file", "error");
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (!authLoading && (!user || !user.isAdmin)) {
@@ -279,12 +306,29 @@ export default function ManageScrimPage() {
                 <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
                   Tournament Poster URL / Image
                 </label>
-                <input
-                  value={scrim.image || ""}
-                  onChange={(e) => update("image", e.target.value)}
-                  placeholder="https://..."
-                  className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
-                />
+                <div className="flex flex-col gap-2">
+                  <input
+                    value={scrim.image || ""}
+                    onChange={(e) => update("image", e.target.value)}
+                    placeholder="https://... or select file to upload"
+                    className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
+                  />
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="w-full border border-border bg-panel-2 p-2 font-mono text-sm text-foreground outline-none focus:border-cyan file:mr-4 file:py-1 file:px-3 file:border file:border-cyan/50 file:bg-cyan/10 file:text-cyan file:font-mono file:text-xs hover:file:bg-cyan/20"
+                    />
+                    {scrim.image && (
+                      <div className="shrink-0 flex items-center gap-2">
+                        <img src={scrim.image} alt="Preview" className="h-10 w-10 object-cover border border-border" />
+                        <span className="font-mono text-[10px] text-cyan truncate max-w-40">{scrim.image}</span>
+                      </div>
+                    )}
+                  </div>
+                  {uploading && <p className="font-mono text-xs text-amber animate-pulse">Uploading image...</p>}
+                </div>
               </div>
             </div>
 

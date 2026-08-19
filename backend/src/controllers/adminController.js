@@ -1,4 +1,10 @@
 import prisma from "../config/prisma.js";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const getDashboardStats = async (req, res) => {
     try {
@@ -38,3 +44,38 @@ export const getDashboardStats = async (req, res) => {
         });
     }
 };
+
+export const uploadTournamentImage = async (req, res) => {
+    try {
+        const { filename, base64Data } = req.body;
+        if (!filename || !base64Data) {
+            return res.status(400).json({
+                success: false,
+                message: "filename and base64Data are required",
+            });
+        }
+
+        const safeFilename = path.basename(filename).replace(/[^a-zA-Z0-9.\-_]/g, "_");
+        const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(cleanBase64, "base64");
+
+        const targetDir = path.join(__dirname, "..", "..", "..", "frontend", "public", "tournaments");
+        await fs.mkdir(targetDir, { recursive: true });
+
+        const targetPath = path.join(targetDir, safeFilename);
+        await fs.writeFile(targetPath, buffer);
+
+        res.json({
+            success: true,
+            message: "Image uploaded successfully",
+            url: `/tournaments/${safeFilename}`,
+        });
+    } catch (error) {
+        console.error("Upload error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to upload image",
+        });
+    }
+};
+

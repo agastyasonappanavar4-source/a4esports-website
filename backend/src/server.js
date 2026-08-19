@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
 import registrationRoutes from "./routes/registrationRoutes.js";
@@ -10,7 +10,6 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
 
-dotenv.config();
 
 const app = express();
 
@@ -22,7 +21,8 @@ app.use(
 );
 
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.get("/", (req, res) => {
     res.json({

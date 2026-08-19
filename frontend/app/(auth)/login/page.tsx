@@ -16,7 +16,7 @@ declare global {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, googleLogin } = useAuth();
+  const { login, googleLogin, updateProfile } = useAuth();
   const { showToast } = useToast();
 
   const [email, setEmail] = useState("");
@@ -32,76 +32,55 @@ export default function LoginPage() {
   const [step, setStep] = useState<"request" | "reset">("request");
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  useEffect(() => {
-    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (window.google?.accounts?.id && googleClientId) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleGoogleCredentialResponse,
-        });
-        const container = document.getElementById("googleBtnContainer");
-        if (container) {
-          window.google.accounts.id.renderButton(container, {
-            theme: "outline",
-            size: "large",
-            width: "100%",
-          });
-        }
-      } catch (err) {
-        console.error("Google button init error:", err);
-      }
-    }
-  }, []);
-
-  const handleGoogleCredentialResponse = async (response: any) => {
-    try {
-      setLoading(true);
-      // Decode JWT token payload
-      const base64Url = response.credential.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
-      );
-      const payload = JSON.parse(jsonPayload);
-
-      await googleLogin({
-        email: payload.email,
-        name: payload.name,
-        googleId: payload.sub,
-        avatar: payload.picture,
-      });
-
-      showToast(`Welcome back, ${payload.name || "Gamer"}!`, "success");
-      const next = new URLSearchParams(window.location.search).get("next") || "/";
-      router.push(next);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Google sign-in failed.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Username modal states
+  const [usernameModalOpen, setUsernameModalOpen] = useState(false);
+  const [chosenUsername, setChosenUsername] = useState("");
+  const [usernameLoading, setUsernameLoading] = useState(false);
 
   const handleSimulatedGoogleLogin = async () => {
     const userEmail = prompt("Enter your Gmail address to Sign in with Google:");
     if (!userEmail || !userEmail.includes("@")) return;
     setLoading(true);
     try {
-      await googleLogin({
+      const loggedUser = await googleLogin({
         email: userEmail,
         name: userEmail.split("@")[0],
       });
       showToast("Signed in with Google successfully!", "success");
-      const next = new URLSearchParams(window.location.search).get("next") || "/";
-      router.push(next);
+      setChosenUsername(loggedUser.username || userEmail.split("@")[0]);
+      setUsernameModalOpen(true);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Google login failed", "error");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveUsername = async () => {
+    if (!chosenUsername.trim()) {
+      showToast("Username cannot be empty.", "error");
+      return;
+    }
+    setUsernameLoading(true);
+    try {
+      await updateProfile({ username: chosenUsername.trim() });
+      showToast("Username updated successfully!", "success");
+      setUsernameModalOpen(false);
+      const next = new URLSearchParams(window.location.search).get("next") || "/";
+      router.push(next);
+      router.refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to update username", "error");
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
+
+  const handleSkipUsername = () => {
+    setUsernameModalOpen(false);
+    const next = new URLSearchParams(window.location.search).get("next") || "/";
+    router.push(next);
+    router.refresh();
   };
 
   const handleLogin = async () => {
@@ -169,7 +148,7 @@ export default function LoginPage() {
         <div className="border-b border-border bg-panel-2 p-6 sm:p-8 text-center relative">
           <img
             src="/logo.jpg"
-            alt="A4esports Logo"
+            alt="A4 ESPORTS Logo"
             className="mx-auto mb-3 h-14 w-14 rounded-lg border border-border/80 object-cover sm:h-16 sm:w-16"
           />
           <h1 className="font-display text-2xl sm:text-3xl font-bold uppercase text-foreground">
@@ -201,10 +180,9 @@ export default function LoginPage() {
 
           {/* Google Login Section */}
           <div>
-            <div id="googleBtnContainer" className="w-full min-h-[44px]"></div>
             <button
               onClick={handleSimulatedGoogleLogin}
-              className="mt-2 flex w-full items-center justify-center gap-3 border border-border bg-panel-2 py-3 font-mono text-xs sm:text-sm text-foreground transition hover:border-cyan hover:bg-cyan/5"
+              className="flex w-full items-center justify-center gap-3 border border-border bg-panel-2 py-3 font-mono text-xs sm:text-sm text-foreground transition hover:border-cyan hover:bg-cyan/5"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24">
                 <path
@@ -292,9 +270,19 @@ export default function LoginPage() {
             {loading ? "Logging In..." : "Login"}
           </button>
 
+          <button
+            onClick={() => {
+              showToast("Entering as Guest...", "info");
+              router.push("/");
+            }}
+            className="btn-press w-full border border-border bg-panel-2 py-3.5 font-display text-base sm:text-lg font-bold uppercase text-foreground transition hover:border-cyan hover:text-cyan mt-1"
+          >
+            Continue as Guest
+          </button>
+
           <div className="border border-cyan/30 bg-cyan/5 p-4 text-center">
             <h3 className="font-display text-base font-bold uppercase text-foreground">
-              New to A4esports?
+              New to A4 ESPORTS?
             </h3>
             <p className="mt-1 font-mono text-xs text-muted-foreground">
               Create an account to register for tournaments and track matches.
@@ -381,6 +369,50 @@ export default function LoginPage() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* USERNAME SELECTION POPUP MODAL */}
+      {usernameModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm border border-border bg-panel p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-display text-lg font-bold uppercase text-foreground">
+                Set Username
+              </h3>
+              <button
+                onClick={handleSkipUsername}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="font-mono text-xs text-muted-foreground">
+              Please enter a username to display your identity inside the website.
+            </p>
+            <input
+              type="text"
+              placeholder="Username"
+              value={chosenUsername}
+              onChange={(e) => setChosenUsername(e.target.value)}
+              className="w-full border border-border bg-panel-2 p-3 font-mono text-sm text-foreground outline-none focus:border-cyan"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={handleSaveUsername}
+                disabled={usernameLoading}
+                className="btn-press flex-1 bg-ember py-3 font-display font-bold uppercase text-void"
+              >
+                {usernameLoading ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={handleSkipUsername}
+                className="border border-border px-4 py-3 font-mono text-xs uppercase text-muted-foreground transition hover:border-cyan hover:text-cyan"
+              >
+                Skip
+              </button>
+            </div>
           </div>
         </div>
       )}

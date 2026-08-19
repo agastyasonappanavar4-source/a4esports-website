@@ -55,12 +55,12 @@ export default function SpecialEventPopup() {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-cyan/40 bg-panel shadow-2xl transition-all duration-300">
-        <div className="relative h-48 sm:h-56 w-full bg-void overflow-hidden">
+        <div className="relative h-48 sm:h-56 w-full bg-void overflow-hidden flex items-center justify-center">
           {popup.image ? (
             <img
               src={popup.image}
               alt={popup.title}
-              className="h-full w-full object-cover"
+              className="max-h-full max-w-full object-contain"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-tactical-grid bg-hero-glow">

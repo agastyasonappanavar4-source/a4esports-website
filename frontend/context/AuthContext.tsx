@@ -32,7 +32,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (username: string, email: string, password: string) => Promise<void>;
-  googleLogin: (payload: { email: string; name?: string; googleId?: string; avatar?: string }) => Promise<void>;
+  googleLogin: (payload: { email: string; name?: string; googleId?: string; avatar?: string }) => Promise<any>;
   updateProfile: (data: Record<string, any>) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -71,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const googleLogin = async (payload: { email: string; name?: string; googleId?: string; avatar?: string }) => {
     const data = await googleLoginRequest(payload);
     setUser(data.user);
+    return data.user;
   };
 
   const updateProfile = async (data: Record<string, any>) => {

@@ -44,13 +44,13 @@ export default function Navbar() {
             <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
               <img
                 src="/logo.jpg"
-                alt="A4esports Logo"
+                alt="A4 ESPORTS Logo"
                 className="h-9 w-9 sm:h-10 sm:w-10 object-cover rounded-md sm:rounded-lg border border-border/80"
               />
 
               <div>
                 <h1 className="font-display text-base sm:text-xl font-bold uppercase tracking-wide text-foreground">
-                  A4esports
+                  A4 ESPORTS
                 </h1>
                 <p className="-mt-1 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground">
                   Competitive Platform

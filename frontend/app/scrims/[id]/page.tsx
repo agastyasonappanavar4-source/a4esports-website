@@ -40,7 +40,7 @@ export default async function TournamentPage({
           <img
             src={scrim.image}
             alt={scrim.title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-contain"
           />
         ) : (
           <div className="absolute inset-0 bg-tactical-grid bg-hero-glow" />
@@ -98,9 +98,9 @@ export default async function TournamentPage({
               {rulesList.length > 0 ? (
                 <ul className="space-y-3 font-mono text-sm text-muted-foreground">
                   {rulesList.map((rule, i) => (
-                    <li key={i} className="flex gap-3">
-                      <ShieldCheck size={16} className="mt-0.5 shrink-0 text-cyan" />
-                      {rule}
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="mt-0.5 shrink-0 text-cyan font-bold select-none">✓</span>
+                      <span>{rule}</span>
                     </li>
                   ))}
                 </ul>
@@ -146,7 +146,16 @@ export default async function TournamentPage({
                 Each time slot runs as its own lobby with its own set of teams.
               </p>
 
-              {openSlots.length === 0 ? (
+              {scrim.fee === 35 && (scrim.status !== "OPEN" || openSlots.length === 0 || openSlots.every(s => (s._count?.registrations ?? 0) >= (s.maxTeams ?? scrim.maxTeams))) ? (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-5 text-center">
+                  <p className="font-mono text-sm font-semibold text-destructive uppercase tracking-widest">
+                    Not Available
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">
+                    The ₹35 lobby is not available for this day.
+                  </p>
+                </div>
+              ) : openSlots.length === 0 ? (
                 <p className="font-mono text-sm text-muted-foreground">
                   No time slots are open right now. Check back soon.
                 </p>

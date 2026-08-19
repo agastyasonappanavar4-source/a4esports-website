@@ -39,12 +39,12 @@ export default function TournamentCard({
         <CornerFrame tone="cyan" />
 
         {/* Banner / Poster */}
-        <div className="relative h-48 w-full overflow-hidden bg-void">
+        <div className="relative h-48 w-full overflow-hidden bg-void flex items-center justify-center">
           {image ? (
             <img
               src={image}
               alt={title}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="h-full w-full bg-tactical-grid bg-void" />

@@ -61,12 +61,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               <div className="flex items-center gap-3">
                 <img
                   src="/logo.jpg"
-                  alt="A4esports Logo"
+                  alt="A4 ESPORTS Logo"
                   className="h-10 w-10 object-cover rounded-md sm:rounded-lg border border-border/80"
                 />
                 <div>
                   <h2 className="font-display text-base font-bold uppercase tracking-wide text-foreground">
-                    A4esports
+                    A4 ESPORTS
                   </h2>
                   <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
                     Competitive Platform

@@ -60,11 +60,11 @@ export default function EventPopupModal() {
 
         {/* Poster Image */}
         {announcement.image ? (
-          <div className="relative h-56 w-full overflow-hidden bg-void">
+          <div className="relative h-56 w-full overflow-hidden bg-void flex items-center justify-center">
             <img
               src={announcement.image}
               alt={announcement.title}
-              className="h-full w-full object-cover transition transform hover:scale-105"
+              className="max-h-full max-w-full object-contain transition transform hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent" />
           </div>

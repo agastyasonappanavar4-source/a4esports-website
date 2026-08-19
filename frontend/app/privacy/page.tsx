@@ -26,12 +26,12 @@ export default function PrivacyPage() {
               </h1>
             </div>
             <p className="mt-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-              Last updated: July 24, 2026 · A4 Esports
+              Last updated: July 24, 2026 · A4 ESPORTS
             </p>
           </div>
 
           <p className="font-mono text-sm leading-relaxed text-muted-foreground">
-            This Privacy Notice for <strong>A4 Esports</strong> (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), describes how and why we might access, collect, store, use, and/or share (&quot;process&quot;) your personal information when you use our services (&quot;Services&quot;), including when you visit or interact with our platform.
+            This Privacy Notice for <strong>A4 ESPORTS</strong> (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), describes how and why we might access, collect, store, use, and/or share (&quot;process&quot;) your personal information when you use our services (&quot;Services&quot;), including when you visit or interact with our platform.
           </p>
 
           <section className="space-y-3">
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
           <section className="space-y-3 border-t border-border pt-6">
             <h2 className="font-display text-xl font-bold uppercase text-foreground">3. Social Logins & Third Parties</h2>
             <p className="font-mono text-sm leading-relaxed text-muted-foreground">
-              If you register or log in using third-party services like Google, we process your account profile details (such as email, name, and profile picture) to simplify your access to A4 Esports.
+              If you register or log in using third-party services like Google, we process your account profile details (such as email, name, and profile picture) to simplify your access to A4 ESPORTS.
             </p>
           </section>
 
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
               If you have any questions or feedback about this notice, reach out to us at:
             </p>
             <div className="border border-border bg-panel-2 p-4 font-mono text-sm text-foreground">
-              <p className="font-bold">A4 Esports Support</p>
+              <p className="font-bold">A4 ESPORTS Support</p>
               <p className="text-cyan">Email: support@a4esports.in</p>
             </div>
           </section>
