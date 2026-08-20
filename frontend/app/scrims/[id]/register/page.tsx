@@ -272,6 +272,19 @@ function ScrimRegisterForm() {
             >
               {submitting ? "Processing..." : scrim.fee === 0 ? "Confirm Registration" : `Continue to Pay ₹${scrim.fee}`}
             </button>
+
+            <div className="mt-6 pt-5 border-t border-border/40 flex flex-col items-center gap-1.5">
+              <span className="font-mono text-xs text-muted-foreground">
+                Need Help / Contact Us?
+              </span>
+              <a
+                href="tel:+917204472826"
+                className="flex items-center gap-1.5 font-mono text-sm font-bold text-cyan hover:underline transition-all"
+              >
+                <Phone size={14} className="text-cyan animate-pulse" />
+                +91 7204472826
+              </a>
+            </div>
           </div>
         </div>
       </div>

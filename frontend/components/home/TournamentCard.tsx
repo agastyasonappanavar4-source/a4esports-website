@@ -51,7 +51,7 @@ export default function TournamentCard({
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent" />
 
-          <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-cyan/40 bg-void/80 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-cyan backdrop-blur-md">
+          <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-cyan/40 bg-void/80 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-cyan backdrop-blur-md">
             <span className="h-2 w-2 rounded-full bg-cyan animate-pulse-dot" />
             Live Scrim
           </div>

@@ -114,7 +114,7 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  href="/register"
+                  href="/login"
                   className="bg-ember px-3 sm:px-5 py-2 font-display text-xs sm:text-sm font-semibold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-8px)_0,100%_8px,100%_100%,8px_100%,0_calc(100%-8px))]"
                 >
                   Register

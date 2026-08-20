@@ -1,5 +1,8 @@
-import { Mail, MessageCircle, Clock3 } from "lucide-react";
+"use client";
+
+import { Mail, MessageCircle, Clock3, Phone, Copy } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
+import { useToast } from "@/context/ToastContext";
 
 const DiscordIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -12,6 +15,15 @@ const DiscordIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function ContactPage() {
+  const { showToast } = useToast();
+
+  const handleCopyNumber = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText("+917204472826");
+    showToast("Phone number copied to clipboard!", "success");
+  };
+
   return (
     <main className="min-h-screen bg-background bg-tactical-grid">
       <Navbar />
@@ -26,26 +38,53 @@ export default function ContactPage() {
           Questions about a tournament, payment, or your registration? Reach out.
         </p>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
-          <a href="mailto:a4esportsindia@gmail.com" className="group border border-border bg-panel p-7 transition hover:border-ember/50">
-            <Mail className="mb-4 h-8 w-8 text-ember" />
-            <h2 className="font-display text-lg font-bold uppercase text-foreground">Email</h2>
-            <p className="mt-2 break-all font-mono text-sm text-muted-foreground">a4esportsindia@gmail.com</p>
-            <p className="mt-1 font-mono text-xs text-muted-foreground">Replies within 24 hours</p>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <a href="mailto:a4esportsindia@gmail.com" className="group border border-border bg-panel p-7 transition hover:border-ember/50 flex flex-col justify-between">
+            <div>
+              <Mail className="mb-4 h-8 w-8 text-ember" />
+              <h2 className="font-display text-lg font-bold uppercase text-foreground">Email</h2>
+              <p className="mt-2 break-all font-mono text-sm text-muted-foreground">a4esportsindia@gmail.com</p>
+            </div>
+            <p className="mt-4 font-mono text-xs text-muted-foreground">Replies within 24 hours</p>
           </a>
 
-          <a href="https://whatsapp.com/channel/0029VbDE3Kk8fewlNG9cAQ1V" target="_blank" rel="noopener noreferrer" className="group border border-border bg-panel p-7 transition hover:border-cyan/50">
-            <MessageCircle className="mb-4 h-8 w-8 text-cyan" />
-            <h2 className="font-display text-lg font-bold uppercase text-foreground">WhatsApp Channel</h2>
-            <p className="mt-2 font-mono text-sm text-muted-foreground">Join our official WhatsApp channel for announcements</p>
-            <p className="mt-1 font-mono text-xs text-muted-foreground">Fast updates & room releases</p>
+          <a href="tel:+917204472826" className="group border border-border bg-panel p-7 transition hover:border-cyan/50 flex flex-col justify-between">
+            <div>
+              <Phone className="mb-4 h-8 w-8 text-cyan" />
+              <h2 className="font-display text-lg font-bold uppercase text-foreground">Phone Support</h2>
+              <p className="mt-2 font-mono text-sm text-muted-foreground hover:underline">+91 7204472826</p>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 justify-between items-center">
+              <span className="font-mono text-xs text-muted-foreground">24/7 Support</span>
+              <button
+                onClick={handleCopyNumber}
+                className="flex items-center gap-1 font-mono text-xs text-cyan hover:underline hover:text-cyan/85"
+                title="Copy phone number"
+              >
+                <Copy size={12} />
+                Copy
+              </button>
+            </div>
           </a>
 
-          <a href="https://discord.gg/Jm5DWuNCH" target="_blank" rel="noopener noreferrer" className="group border border-border bg-panel p-7 transition hover:border-indigo-500/50">
-            <DiscordIcon className="mb-4 h-8 w-8 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-            <h2 className="font-display text-lg font-bold uppercase text-foreground">Discord Server</h2>
-            <p className="mt-2 font-mono text-sm text-muted-foreground">Connect with other players and join queries lobby</p>
-            <p className="mt-1 font-mono text-xs text-muted-foreground">24/7 community support</p>
+          <a href="https://whatsapp.com/channel/0029VbDE3Kk8fewlNG9cAQ1V" target="_blank" rel="noopener noreferrer" className="group border border-border bg-panel p-7 transition hover:border-cyan/50 flex flex-col justify-between">
+            <div>
+              <MessageCircle className="mb-4 h-8 w-8 text-cyan" />
+              <h2 className="font-display text-lg font-bold uppercase text-foreground">WhatsApp</h2>
+            </div>
+            <div className="mt-4">
+              <p className="font-mono text-xs text-muted-foreground">Official WhatsApp channel for announcements</p>
+            </div>
+          </a>
+
+          <a href="https://discord.gg/Jm5DWuNCH" target="_blank" rel="noopener noreferrer" className="group border border-border bg-panel p-7 transition hover:border-indigo-500/50 flex flex-col justify-between">
+            <div>
+              <DiscordIcon className="mb-4 h-8 w-8 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+              <h2 className="font-display text-lg font-bold uppercase text-foreground">Discord</h2>
+            </div>
+            <div className="mt-4">
+              <p className="font-mono text-xs text-muted-foreground">Connect with players and join lobby support</p>
+            </div>
           </a>
         </div>
 

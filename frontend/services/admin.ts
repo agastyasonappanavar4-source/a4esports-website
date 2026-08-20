@@ -209,3 +209,46 @@ export async function uploadImageRequest(
   return handle(response);
 }
 
+export interface AdminRegistrationWithDetails extends AdminRegistration {
+  scrim: {
+    id: number;
+    title: string;
+    fee: number;
+    mode: "BR" | "CS";
+  };
+  slot: {
+    id: number;
+    time: SlotTime;
+  };
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+  };
+}
+
+export async function getAllRegistrationsRequest(): Promise<AdminRegistrationWithDetails[]> {
+  const response = await fetch(`${API_URL}/api/admin/registrations`, {
+    credentials: "include",
+  });
+  const data = await handle(response);
+  return data.data;
+}
+
+export async function adminRegisterTeamRequest(payload: {
+  slotId: number;
+  teamName: string;
+  iglName: string;
+  phone: string;
+  paymentStatus: "PENDING" | "PAID";
+}): Promise<AdminRegistration> {
+  const response = await fetch(`${API_URL}/api/admin/registrations`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await handle(response);
+  return data.data;
+}
+

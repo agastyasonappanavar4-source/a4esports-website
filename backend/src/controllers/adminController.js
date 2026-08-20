@@ -79,3 +79,113 @@ export const uploadTournamentImage = async (req, res) => {
     }
 };
 
+// GET ALL REGISTRATIONS (ADMIN ONLY)
+export const getAllRegistrations = async (req, res) => {
+    try {
+        const registrations = await prisma.registration.findMany({
+            include: {
+                scrim: {
+                    select: {
+                        id: true,
+                        title: true,
+                        fee: true,
+                        mode: true,
+                    },
+                },
+                slot: {
+                    select: {
+                        id: true,
+                        time: true,
+                    },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        email: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
+        res.status(200).json({
+            success: true,
+            data: registrations,
+        });
+    } catch (error) {
+        console.error("Get All Registrations Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch all registrations",
+        });
+    }
+};
+
+// MANUALLY REGISTER A TEAM (ADMIN ONLY)
+export const adminRegisterTeam = async (req, res) => {
+    try {
+        const { slotId, teamName, iglName, phone, paymentStatus } = req.body;
+
+        if (!slotId || !teamName || !iglName || !phone) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required fields: slotId, teamName, iglName, phone",
+            });
+        }
+
+        const slot = await prisma.slot.findUnique({
+            where: { id: Number(slotId) },
+            include: { scrim: true },
+        });
+
+        if (!slot) {
+            return res.status(404).json({
+                success: false,
+                message: "Time slot not found",
+            });
+        }
+
+        let slotNumber = 0;
+        let registrationCode = "";
+
+        if (paymentStatus === "PAID") {
+            const highestSlot = await prisma.registration.aggregate({
+                where: { slotId: Number(slotId), paymentStatus: "PAID" },
+                _max: { slotNumber: true },
+            });
+            slotNumber = (highestSlot._max.slotNumber ?? 0) + 1;
+            registrationCode = `${slot.scrim.mode}${slot.scrim.id}-${slot.time}-${String(slotNumber).padStart(4, "0")}`;
+        } else {
+            registrationCode = `${slot.scrim.mode}${slot.scrim.id}-${slot.time}-PENDING-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        }
+
+        const registration = await prisma.registration.create({
+            data: {
+                registrationCode,
+                teamName,
+                iglName,
+                phone,
+                slotNumber,
+                scrimId: slot.scrim.id,
+                slotId: Number(slotId),
+                userId: req.user.userId,
+                paymentStatus: paymentStatus || "PAID",
+            },
+        });
+
+        res.status(201).json({
+            success: true,
+            data: registration,
+        });
+    } catch (error) {
+        console.error("Admin Manual Register Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to register team manually",
+        });
+    }
+};
+
