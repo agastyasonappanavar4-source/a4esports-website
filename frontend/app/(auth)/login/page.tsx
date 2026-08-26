@@ -196,7 +196,7 @@ export default function LoginPage() {
           <button
             onClick={() => {
               showToast("Entering as Guest...", "info");
-              router.push("/");
+              router.push("/scrims");
             }}
             className="btn-press w-full border border-border bg-panel-2 py-3.5 font-display text-base sm:text-lg font-bold uppercase text-foreground transition hover:border-cyan hover:text-cyan"
           >
