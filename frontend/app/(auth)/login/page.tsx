@@ -120,7 +120,7 @@ export default function LoginPage() {
       await updateProfile({ username: chosenUsername.trim() });
       showToast("Username updated successfully!", "success");
       setUsernameModalOpen(false);
-      const next = new URLSearchParams(window.location.search).get("next") || "/";
+      const next = new URLSearchParams(window.location.search).get("next") || "/platform";
       router.push(next);
       router.refresh();
     } catch (err) {
@@ -132,7 +132,7 @@ export default function LoginPage() {
 
   const handleSkipUsername = () => {
     setUsernameModalOpen(false);
-    const next = new URLSearchParams(window.location.search).get("next") || "/";
+    const next = new URLSearchParams(window.location.search).get("next") || "/platform";
     router.push(next);
     router.refresh();
   };
