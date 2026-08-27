@@ -13,9 +13,29 @@ import announcementRoutes from "./routes/announcementRoutes.js";
 
 const app = express();
 
+const allowedOrigins = [
+    "http://localhost:3000",
+    "https://www.a4esports.in",
+    "https://a4esports-website.vercel.app"
+];
+if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+            const cleanOrigin = origin.endsWith("/") ? origin.slice(0, -1) : origin;
+            if (
+                allowedOrigins.includes(cleanOrigin) || 
+                cleanOrigin.startsWith("http://localhost:")
+            ) {
+                callback(null, true);
+            } else {
+                callback(null, false); // Fail silently or pass false to let CORS block it normally
+            }
+        },
         credentials: true,
     })
 );

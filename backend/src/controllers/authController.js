@@ -98,16 +98,18 @@ export const login = async (req, res) => {
             { expiresIn: "7d" }
         );
 
+        const isProduction = process.env.NODE_ENV === "production" || process.env.FRONTEND_URL?.includes("a4esports.in");
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         res.status(200).json({
             success: true,
             message: "Login successful.",
+            token,
             user: {
                 id: user.id,
                 username: user.username,
@@ -127,7 +129,12 @@ export const login = async (req, res) => {
 
 // LOGOUT
 export const logout = (req, res) => {
-    res.clearCookie("token");
+    const isProduction = process.env.NODE_ENV === "production" || process.env.FRONTEND_URL?.includes("a4esports.in");
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+    });
 
     res.json({
         success: true,
@@ -223,16 +230,18 @@ export const googleLogin = async (req, res) => {
             { expiresIn: "7d" }
         );
 
+        const isProduction = process.env.NODE_ENV === "production" || process.env.FRONTEND_URL?.includes("a4esports.in");
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         res.status(200).json({
             success: true,
             message: "Google Sign-In successful.",
+            token,
             user: {
                 id: user.id,
                 username: user.username,
@@ -439,7 +448,14 @@ export const updateProfile = async (req, res) => {
 // Get Current User (unused directly by routes, kept for compatibility)
 export const getMe = async (req, res) => {
     try {
-        const token = req.cookies.token;
+        let token = req.cookies.token;
+
+        if (!token && req.headers.authorization) {
+            const parts = req.headers.authorization.split(" ");
+            if (parts.length === 2 && parts[0] === "Bearer") {
+                token = parts[1];
+            }
+        }
 
         if (!token) {
             return res.status(401).json({
