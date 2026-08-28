@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
-import { Trophy, Users, Calendar, IndianRupee, ShieldCheck, Clock, ArrowLeft } from "lucide-react";
+import { Trophy, Users, Calendar, IndianRupee, ShieldCheck, Clock } from "lucide-react";
+import BackToHome from "@/components/layout/BackToHome";
 import { getScrimById } from "@/lib/scrims";
 import { slotTimeLabel } from "@/lib/slotTime";
 import { CornerFrame } from "@/components/ui/CornerFrame";
@@ -48,13 +49,7 @@ export default async function TournamentPage({
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col justify-end px-4 sm:px-6 pb-6 sm:pb-10">
-          <Link
-            href="/"
-            className="mb-4 flex items-center gap-2 font-mono text-xs text-muted-foreground hover:text-cyan transition w-fit bg-panel/80 px-3 py-1.5 rounded-md border border-border"
-          >
-            <ArrowLeft size={14} />
-            Back to Home
-          </Link>
+          <BackToHome />
 
           <div>
             <span className="flex w-fit items-center gap-2 rounded-full border border-cyan/40 bg-cyan/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-cyan backdrop-blur-md">

@@ -66,7 +66,7 @@ function ScrimRegisterForm() {
 
   const goHomeRegistered = () => {
     showToast("You're registered! Check the home page for match details.", "success");
-    setTimeout(() => router.push("/"), 900);
+    setTimeout(() => router.push("/platform"), 900);
   };
 
   const handleSubmit = async () => {

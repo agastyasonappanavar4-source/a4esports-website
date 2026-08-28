@@ -87,7 +87,7 @@ export default function ProfilePage() {
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-8 sm:py-12 flex-1">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
-            href="/"
+            href="/platform"
             className="flex items-center gap-2 border border-border bg-panel px-4 py-2 font-mono text-xs sm:text-sm text-muted-foreground transition hover:border-cyan hover:text-cyan"
           >
             <ArrowLeft size={16} />

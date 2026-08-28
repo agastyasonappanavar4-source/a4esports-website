@@ -32,7 +32,7 @@ export default function MyMatchesPage() {
       <Navbar />
       <div className="mx-auto max-w-5xl px-6 py-12">
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/platform")}
           className="mb-8 flex items-center gap-2 border border-border bg-panel px-5 py-2.5 font-mono text-sm text-muted-foreground transition hover:border-cyan hover:text-cyan"
         >
           <ArrowLeft size={16} />

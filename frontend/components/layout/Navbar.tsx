@@ -41,7 +41,7 @@ export default function Navbar() {
               <Menu size={20} />
             </button>
 
-            <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
+            <Link href={user ? "/platform" : "/"} className="flex items-center gap-2.5 sm:gap-3">
               <img
                 src="/logo.jpg"
                 alt="A4 ESPORTS Logo"

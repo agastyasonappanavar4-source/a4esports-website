@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft, ScrollText } from "lucide-react";
+import { ScrollText } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import BackToHome from "@/components/layout/BackToHome";
 
 export default function TermsPage() {
   return (
@@ -9,13 +10,10 @@ export default function TermsPage() {
       <Navbar />
 
       <div className="mx-auto w-full max-w-4xl px-5 py-10">
-        <Link
-          href="/"
+        <BackToHome
           className="mb-6 inline-flex items-center gap-2 border border-border bg-panel px-4 py-2 font-mono text-sm text-muted-foreground transition hover:border-cyan hover:text-cyan"
-        >
-          <ArrowLeft size={16} />
-          Back to Home
-        </Link>
+          iconSize={16}
+        />
 
         <div className="border border-border bg-panel p-6 sm:p-10 space-y-6">
           <div className="border-b border-border pb-6">

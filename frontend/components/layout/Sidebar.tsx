@@ -29,7 +29,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
 
   const menuItems = [
-    { icon: Home, title: "Home", href: "/" },
+    { icon: Home, title: "Home", href: user ? "/platform" : "/" },
     { icon: Trophy, title: "Tournaments", href: "/#scrims" },
     { icon: Bell, title: "Notifications", href: "/notifications" },
     { icon: User, title: "My Profile", href: "/profile" },

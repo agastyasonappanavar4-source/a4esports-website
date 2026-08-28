@@ -37,7 +37,7 @@ export default function AdminAnnouncementsPage() {
 
   useEffect(() => {
     if (!authLoading && (!user || !user.isAdmin)) {
-      router.push("/");
+      router.push(user ? "/platform" : "/");
     }
   }, [authLoading, user, router]);
 
