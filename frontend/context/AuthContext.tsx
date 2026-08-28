@@ -48,8 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await getMe();
       setUser(data.user);
-    } catch {
+    } catch (err: any) {
       setUser(null);
+      if (err.status === 401) {
+        localStorage.removeItem("token");
+      }
     } finally {
       setLoading(false);
     }

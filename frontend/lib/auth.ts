@@ -3,7 +3,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 async function handle(response: Response) {
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message || "Something went wrong");
+    const error = new Error(data.message || "Something went wrong");
+    // @ts-ignore
+    error.status = response.status;
+    throw error;
   }
   return data;
 }
