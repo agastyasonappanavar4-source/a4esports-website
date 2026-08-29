@@ -44,10 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const formatUser = (u: any): AuthUser | null => {
+    if (!u) return null;
+    return {
+      ...u,
+      isAdmin: Boolean(u.isAdmin),
+    };
+  };
+
   const refreshUser = async () => {
     try {
       const data = await getMe();
-      setUser(data.user);
+      setUser(formatUser(data.user));
     } catch (err: any) {
       setUser(null);
       if (err.status === 401) {
@@ -112,7 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.token) {
       localStorage.setItem("token", data.token);
     }
-    setUser(data.user);
+    const formatted = formatUser(data.user);
+    setUser(formatted);
   };
 
   const signup = async (username: string, email: string, password: string) => {
@@ -124,14 +133,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.token) {
       localStorage.setItem("token", data.token);
     }
-    setUser(data.user);
-    return data.user;
+    const formatted = formatUser(data.user);
+    setUser(formatted);
+    return formatted;
   };
 
   const updateProfile = async (data: Record<string, any>) => {
     const res = await updateProfileRequest(data);
     if (res.user) {
-      setUser(res.user);
+      setUser(formatUser(res.user));
     }
   };
 

@@ -14,9 +14,11 @@ export const signup = async (req, res) => {
             });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         const existingUser = await prisma.user.findFirst({
             where: {
-                OR: [{ username }, { email }],
+                OR: [{ username }, { email: normalizedEmail }],
             },
         });
 
@@ -32,7 +34,7 @@ export const signup = async (req, res) => {
         const user = await prisma.user.create({
             data: {
                 username,
-                email,
+                email: normalizedEmail,
                 password: hashedPassword,
             },
         });
@@ -44,7 +46,7 @@ export const signup = async (req, res) => {
                 id: user.id,
                 username: user.username,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                isAdmin: Boolean(user.isAdmin),
             },
         });
     } catch (error) {
@@ -69,8 +71,10 @@ export const login = async (req, res) => {
             });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         const user = await prisma.user.findUnique({
-            where: { email },
+            where: { email: normalizedEmail },
         });
 
         if (!user) {
@@ -92,7 +96,7 @@ export const login = async (req, res) => {
         const token = jwt.sign(
             {
                 userId: user.id,
-                isAdmin: user.isAdmin,
+                isAdmin: Boolean(user.isAdmin),
             },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
@@ -114,7 +118,7 @@ export const login = async (req, res) => {
                 id: user.id,
                 username: user.username,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                isAdmin: Boolean(user.isAdmin),
             },
         });
     } catch (error) {
@@ -167,7 +171,13 @@ export const getCurrentUser = async (req, res) => {
             });
         }
 
-        res.json({ success: true, user });
+        res.json({
+            success: true,
+            user: {
+                ...user,
+                isAdmin: Boolean(user.isAdmin),
+            },
+        });
     } catch (error) {
         console.error(error);
 
@@ -190,13 +200,15 @@ export const googleLogin = async (req, res) => {
             });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         let user = await prisma.user.findUnique({
-            where: { email },
+            where: { email: normalizedEmail },
         });
 
         if (!user) {
             // Generate unique username from name or email
-            const baseUsername = (name || email.split("@")[0]).replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+            const baseUsername = (name || normalizedEmail.split("@")[0]).replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
             let username = baseUsername || "player";
             const existingName = await prisma.user.findUnique({ where: { username } });
             if (existingName) {
@@ -208,7 +220,7 @@ export const googleLogin = async (req, res) => {
             user = await prisma.user.create({
                 data: {
                     username,
-                    email,
+                    email: normalizedEmail,
                     password: dummyPassword,
                     googleId: googleId || null,
                     avatar: avatar || null,
@@ -224,7 +236,7 @@ export const googleLogin = async (req, res) => {
         const token = jwt.sign(
             {
                 userId: user.id,
-                isAdmin: user.isAdmin,
+                isAdmin: Boolean(user.isAdmin),
             },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
@@ -246,7 +258,7 @@ export const googleLogin = async (req, res) => {
                 id: user.id,
                 username: user.username,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                isAdmin: Boolean(user.isAdmin),
                 inGameName: user.inGameName,
                 uid: user.uid,
                 avatar: user.avatar,
@@ -274,8 +286,10 @@ export const forgotPassword = async (req, res) => {
             });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         const user = await prisma.user.findUnique({
-            where: { email },
+            where: { email: normalizedEmail },
         });
 
         if (!user) {
@@ -320,8 +334,10 @@ export const resetPassword = async (req, res) => {
             });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         const user = await prisma.user.findUnique({
-            where: { email },
+            where: { email: normalizedEmail },
         });
 
         if (!user) {
@@ -434,7 +450,10 @@ export const updateProfile = async (req, res) => {
         res.json({
             success: true,
             message: "Profile updated successfully.",
-            user: updatedUser,
+            user: {
+                ...updatedUser,
+                isAdmin: Boolean(updatedUser.isAdmin),
+            },
         });
     } catch (error) {
         console.error(error);
@@ -487,7 +506,13 @@ export const getMe = async (req, res) => {
             });
         }
 
-        res.json({ success: true, user });
+        res.json({
+            success: true,
+            user: {
+                ...user,
+                isAdmin: Boolean(user.isAdmin),
+            },
+        });
     } catch (error) {
         console.error(error);
 

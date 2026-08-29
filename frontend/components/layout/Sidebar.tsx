@@ -36,7 +36,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     { icon: ScrollText, title: "Rules", href: "/rules" },
     { icon: Phone, title: "Contact Us", href: "/contact" },
     { icon: Settings, title: "Settings", href: "/settings" },
-    ...(user?.isAdmin
+    ...(user && Boolean(user.isAdmin)
       ? [{ icon: ShieldCheck, title: "Admin Panel", href: "/admin" }]
       : []),
   ];
