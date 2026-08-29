@@ -19,6 +19,17 @@ interface Announcement {
   createdAt: string;
 }
 
+function getAuthHeaders(customHeaders: Record<string, string> = {}) {
+  const headers: Record<string, string> = { ...customHeaders };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
+
 export default function AdminAnnouncementsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -45,7 +56,7 @@ export default function AdminAnnouncementsPage() {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
       const [annRes, scrimsData] = await Promise.all([
-        fetch(`${backendUrl}/api/announcements`, { credentials: "include" }),
+        fetch(`${backendUrl}/api/announcements`, { credentials: "include", headers: getAuthHeaders() }),
         getScrims(),
       ]);
       const annData = await annRes.json();
@@ -79,7 +90,7 @@ export default function AdminAnnouncementsPage() {
       const res = await fetch(`${backendUrl}/api/announcements`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           title,
           description,
@@ -113,7 +124,7 @@ export default function AdminAnnouncementsPage() {
       const res = await fetch(`${backendUrl}/api/announcements/${item.id}`, {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           isPopup: true,
           active: !item.active,
@@ -138,6 +149,7 @@ export default function AdminAnnouncementsPage() {
       const res = await fetch(`${backendUrl}/api/announcements/${id}`, {
         method: "DELETE",
         credentials: "include",
+        headers: getAuthHeaders(),
       });
 
       const data = await res.json();

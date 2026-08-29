@@ -34,9 +34,21 @@ export interface MyRegistration {
   slot: RegistrationSlot;
 }
 
+function getAuthHeaders(customHeaders: Record<string, string> = {}) {
+  const headers: Record<string, string> = { ...customHeaders };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
+
 export async function getMyRegistrations(): Promise<MyRegistration[]> {
   const response = await fetch(`${API_URL}/api/registrations/me`, {
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   const data = await response.json();
   if (!response.ok) {
@@ -60,6 +72,7 @@ export async function getRegistrationDetails(
 ): Promise<RegistrationDetails> {
   const response = await fetch(`${API_URL}/api/registrations/${id}/details`, {
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   const data = await response.json();
   if (!response.ok) {

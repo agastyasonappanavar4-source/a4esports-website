@@ -3,6 +3,17 @@ import type { SlotTime } from "@/lib/slotTime";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+function getAuthHeaders(customHeaders: Record<string, string> = {}) {
+  const headers: Record<string, string> = { ...customHeaders };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
+
 async function handle(response: Response) {
   const data = await response.json();
   if (!response.ok) {
@@ -22,6 +33,7 @@ export interface DashboardStats {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const response = await fetch(`${API_URL}/api/admin/stats`, {
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   const data = await handle(response);
   return data.data;
@@ -44,7 +56,7 @@ export async function createScrimRequest(input: ScrimInput): Promise<Scrim> {
   const response = await fetch(`${API_URL}/api/scrims`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(input),
   });
   const data = await handle(response);
@@ -58,7 +70,7 @@ export async function updateScrimRequest(
   const response = await fetch(`${API_URL}/api/scrims/${id}`, {
     method: "PUT",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(input),
   });
   const data = await handle(response);
@@ -69,6 +81,7 @@ export async function deleteScrimRequest(id: number) {
   const response = await fetch(`${API_URL}/api/scrims/${id}`, {
     method: "DELETE",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   return handle(response);
 }
@@ -77,7 +90,7 @@ export async function updateScrimStatusRequest(id: number, status: "OPEN" | "CLO
   const response = await fetch(`${API_URL}/api/scrims/${id}/status`, {
     method: "PATCH",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ status }),
   });
   const data = await handle(response);
@@ -94,7 +107,7 @@ export async function createSlotRequest(
   const response = await fetch(`${API_URL}/api/scrims/${scrimId}/slots`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ time, maxTeams }),
   });
   const data = await handle(response);
@@ -108,7 +121,7 @@ export async function updateSlotRequest(
   const response = await fetch(`${API_URL}/api/scrims/slots/${slotId}`, {
     method: "PUT",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ maxTeams }),
   });
   const data = await handle(response);
@@ -119,6 +132,7 @@ export async function deleteSlotRequest(slotId: number) {
   const response = await fetch(`${API_URL}/api/scrims/slots/${slotId}`, {
     method: "DELETE",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   return handle(response);
 }
@@ -132,7 +146,7 @@ export async function updateSlotStatusRequest(
   const response = await fetch(`${API_URL}/api/scrims/slots/${slotId}/status`, {
     method: "PATCH",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ status }),
   });
   const data = await handle(response);
@@ -147,7 +161,7 @@ export async function releaseSlotRoomRequest(
   const response = await fetch(`${API_URL}/api/scrims/slots/${slotId}/room`, {
     method: "PATCH",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ roomId, roomPassword }),
   });
   const data = await handle(response);
@@ -173,6 +187,7 @@ export async function getRegistrationsByScrimRequest(
 ): Promise<AdminRegistration[]> {
   const response = await fetch(`${API_URL}/api/registrations/scrim/${scrimId}`, {
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   const data = await handle(response);
   return data.data;
@@ -183,6 +198,7 @@ export async function getRegistrationsBySlotRequest(
 ): Promise<AdminRegistration[]> {
   const response = await fetch(`${API_URL}/api/registrations/slot/${slotId}`, {
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   const data = await handle(response);
   return data.data;
@@ -192,6 +208,7 @@ export async function removeRegistrationRequest(id: number) {
   const response = await fetch(`${API_URL}/api/registrations/${id}`, {
     method: "DELETE",
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   return handle(response);
 }
@@ -203,7 +220,7 @@ export async function uploadImageRequest(
   const response = await fetch(`${API_URL}/api/admin/upload`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ filename, base64Data }),
   });
   return handle(response);
@@ -230,6 +247,7 @@ export interface AdminRegistrationWithDetails extends AdminRegistration {
 export async function getAllRegistrationsRequest(): Promise<AdminRegistrationWithDetails[]> {
   const response = await fetch(`${API_URL}/api/admin/registrations`, {
     credentials: "include",
+    headers: getAuthHeaders(),
   });
   const data = await handle(response);
   return data.data;
@@ -245,7 +263,7 @@ export async function adminRegisterTeamRequest(payload: {
   const response = await fetch(`${API_URL}/api/admin/registrations`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const data = await handle(response);
