@@ -10,7 +10,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
 import matchRoutes from "./routes/matchRoutes.js";
-import { ensureDatabaseSchema } from "./config/ensureSchema.js";
+import { ensureDatabaseSchema, getAdminSyncReport } from "./config/ensureSchema.js";
 
 const app = express();
 
@@ -50,6 +50,7 @@ app.get("/", (req, res) => {
     res.json({
         success: true,
         message: "🚀 A4esports Backend Running",
+        adminSync: getAdminSyncReport(),
     });
 });
 

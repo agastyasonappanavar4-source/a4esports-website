@@ -211,4 +211,76 @@ export async function ensureDatabaseSchema() {
     } catch (error) {
         console.warn("Schema check warning (non-fatal):", error?.message || error);
     }
+
+    // 7. Production-Safe Admin Synchronization
+    await ensureAdminAccounts();
+}
+
+let adminSyncReport = { checked: false, found: false, email: null, isAdmin: false, error: null };
+
+export function getAdminSyncReport() {
+    return adminSyncReport;
+}
+
+export async function ensureAdminAccounts() {
+    const targetEmail = "anandkarthik.kle@gmail.com";
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email: targetEmail },
+            select: { id: true, email: true, username: true, isAdmin: true },
+        });
+
+        if (!user) {
+            console.log(`[AdminSync] Target account "${targetEmail}" was not found in the database. No account created.`);
+            adminSyncReport = {
+                checked: true,
+                found: false,
+                email: targetEmail,
+                isAdmin: false,
+                message: "User account not found in database.",
+            };
+            return adminSyncReport;
+        }
+
+        console.log(`[AdminSync] Found account: id=${user.id}, username=${user.username}, email=${user.email}, current isAdmin=${user.isAdmin}`);
+
+        if (!user.isAdmin) {
+            const updated = await prisma.user.update({
+                where: { email: targetEmail },
+                data: { isAdmin: true },
+                select: { id: true, email: true, username: true, isAdmin: true },
+            });
+            console.log(`[AdminSync] Successfully updated user "${updated.email}" to isAdmin=true.`);
+            adminSyncReport = {
+                checked: true,
+                found: true,
+                email: updated.email,
+                username: updated.username,
+                isAdmin: Boolean(updated.isAdmin),
+                updatedNow: true,
+            };
+        } else {
+            console.log(`[AdminSync] User "${user.email}" already has isAdmin=true.`);
+            adminSyncReport = {
+                checked: true,
+                found: true,
+                email: user.email,
+                username: user.username,
+                isAdmin: true,
+                updatedNow: false,
+            };
+        }
+
+        return adminSyncReport;
+    } catch (error) {
+        console.error("[AdminSync] Error during admin check:", error?.message || error);
+        adminSyncReport = {
+            checked: true,
+            found: false,
+            email: targetEmail,
+            isAdmin: false,
+            error: error?.message || String(error),
+        };
+        return adminSyncReport;
+    }
 }
