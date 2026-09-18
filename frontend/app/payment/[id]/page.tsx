@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -43,6 +43,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
   const [canVerify, setCanVerify] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -101,8 +102,9 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
   };
 
   const handleContinueAndVerify = async () => {
-    if (!canVerify || submitting) return;
+    if (!canVerify || submitting || isSubmittingRef.current) return;
 
+    isSubmittingRef.current = true;
     setSubmitting(true);
     try {
       await requestPaymentVerification(registrationId);
@@ -112,11 +114,12 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
       );
       router.push("/platform");
     } catch (err) {
+      isSubmittingRef.current = false;
+      setSubmitting(false);
       showToast(
         err instanceof Error ? err.message : "Failed to submit verification request",
         "error"
       );
-      setSubmitting(false);
     }
   };
 

@@ -17,6 +17,7 @@ const app = express();
 const allowedOrigins = [
     "http://localhost:3000",
     "https://www.a4esports.in",
+    "https://a4esports.in",
     "https://a4esports-website.vercel.app"
 ];
 if (process.env.FRONTEND_URL) {
@@ -59,6 +60,14 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/matches", matchRoutes);
+
+// Always return JSON for unknown API routes instead of Express HTML error
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: `Endpoint not found: ${req.method} ${req.originalUrl}`,
+    });
+});
 
 const PORT = process.env.PORT || 5000;
 

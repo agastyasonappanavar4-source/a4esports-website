@@ -61,10 +61,15 @@ export async function requestPaymentVerification(registrationId: number) {
     body: JSON.stringify({ registrationId }),
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type");
+  const isJson = contentType && contentType.includes("application/json");
+  const data = isJson ? await response.json() : null;
 
   if (!response.ok) {
-    throw new Error(data.message || "Failed to submit payment verification request");
+    throw new Error(
+      data?.message ||
+      (isJson ? "Failed to submit verification request" : `Backend server error (${response.status})`)
+    );
   }
 
   return data;
@@ -76,12 +81,17 @@ export async function getPaymentStatus(registrationId: number) {
     headers: getAuthHeaders(),
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type");
+  const isJson = contentType && contentType.includes("application/json");
+  const data = isJson ? await response.json() : null;
 
   if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch payment status");
+    throw new Error(
+      data?.message ||
+      (isJson ? "Failed to fetch payment status" : `Backend server error (${response.status})`)
+    );
   }
 
-  return data.data;
+  return data?.data;
 }
 
