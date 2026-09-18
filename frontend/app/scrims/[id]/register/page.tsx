@@ -79,10 +79,16 @@ function ScrimRegisterForm() {
     setSubmitting(true);
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const regResponse = await fetch(`${API_URL}/api/registrations`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ slotId: slot.id, teamName, iglName, phone }),
       });
 
@@ -94,12 +100,14 @@ function ScrimRegisterForm() {
 
       const registration = regData.data;
 
+      // FREE SCRIM: No payment page, immediately confirmed, redirect to homepage
       if (scrim.fee === 0) {
-        goHomeRegistered();
+        showToast("Registration confirmed! Welcome to the tournament.", "success");
+        setTimeout(() => router.push("/platform"), 800);
         return;
       }
 
-      // Route directly to dedicated manual UPI payment page
+      // PAID SCRIM: Route directly to dedicated manual UPI payment page
       showToast("Registration saved! Proceeding to payment...", "success");
       router.push(`/payment/${registration.id}`);
     } catch (err) {

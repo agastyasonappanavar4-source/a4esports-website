@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -23,12 +23,14 @@ import { slotTimeLabel } from "@/lib/slotTime";
 import { Skeleton } from "@/components/ui/Skeleton";
 import Navbar from "@/components/layout/Navbar";
 
-const UPI_ID = process.env.NEXT_PUBLIC_UPI_ID || "7204472826@upi";
-const QR_IMAGE = process.env.NEXT_PUBLIC_UPI_QR_IMAGE || "/tournaments/upi-qr.svg";
+const UPI_ID = process.env.NEXT_PUBLIC_UPI_ID || "7022240954@fam";
+const QR_IMAGE = process.env.NEXT_PUBLIC_UPI_QR_IMAGE || "";
 
-export default function PaymentPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const registrationId = Number(resolvedParams.id);
+export default function PaymentPage({ params }: { params?: Promise<{ id: string }> }) {
+  const routeParams = useParams<{ id: string }>();
+  const unwrappedParams = params ? use(params) : null;
+  const rawId = routeParams?.id || unwrappedParams?.id;
+  const registrationId = Number(rawId);
 
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -237,15 +239,29 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               </p>
             </div>
 
-            {/* Prominent Configured QR Image */}
+            {/* Configured QR Image or Clean Tactical Placeholder */}
             <div className="mx-auto flex flex-col items-center justify-center">
-              <div className="relative rounded-2xl border-2 border-ember/40 bg-white p-4 shadow-xl transition-transform hover:scale-[1.01]">
-                <img
-                  src={QR_IMAGE}
-                  alt="A4 Esports Official UPI QR Code"
-                  className="h-56 w-56 sm:h-64 sm:w-64 object-contain"
-                />
-              </div>
+              {QR_IMAGE ? (
+                <div className="relative rounded-2xl border-2 border-ember/40 bg-white p-4 shadow-xl transition-transform hover:scale-[1.01]">
+                  <img
+                    src={QR_IMAGE}
+                    alt="Official UPI QR Code"
+                    className="h-56 w-56 sm:h-64 sm:w-64 object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-panel-2/80 p-6 h-56 w-56 sm:h-60 sm:w-60 text-center shadow-lg">
+                  <div className="rounded-full bg-cyan/15 border border-cyan/40 p-3 mb-2 text-cyan">
+                    <Clock size={24} />
+                  </div>
+                  <p className="font-display text-sm font-bold uppercase tracking-wider text-foreground">
+                    Official QR Code
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] text-muted-foreground leading-relaxed">
+                    QR image to be uploaded<br />Pay directly using UPI ID below
+                  </p>
+                </div>
+              )}
               <p className="mt-2.5 font-mono text-[11px] text-muted-foreground text-center">
                 Scan using Google Pay, PhonePe, Paytm, BHIM, or any UPI app
               </p>

@@ -46,7 +46,7 @@ export default function RegisteredBanner() {
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-ember animate-pulse-dot" />
           <span className="font-mono text-xs uppercase tracking-widest text-ember font-bold">
-            Your Registrations ({registrations.length})
+            My Registered Scrim{registrations.length > 1 ? `s (${registrations.length})` : ""}
           </span>
         </div>
         <span className="font-mono text-[11px] text-muted-foreground hidden sm:inline">
@@ -57,7 +57,8 @@ export default function RegisteredBanner() {
       {/* Responsive Horizontal Scroll Container for Mobile / Grid on Desktop */}
       <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
         {registrations.map((reg) => {
-          const isPending = reg.paymentStatus === "PENDING";
+          const isFree = reg.scrim.fee === 0;
+          const isPending = !isFree && reg.paymentStatus === "PENDING";
           const timing = slotTimeLabel(reg.slot);
           const formattedDate = new Date(reg.scrim.date).toLocaleDateString("en-IN", {
             day: "numeric",
@@ -83,7 +84,12 @@ export default function RegisteredBanner() {
                         : "border border-cyan/50 bg-cyan/15 text-cyan"
                     }`}
                   >
-                    {isPending ? (
+                    {isFree ? (
+                      <>
+                        <CheckCircle2 size={11} />
+                        Registration: CONFIRMED
+                      </>
+                    ) : isPending ? (
                       <>
                         <Hourglass size={11} />
                         Payment Being Verified
@@ -122,13 +128,13 @@ export default function RegisteredBanner() {
                   </div>
                   <div className="flex items-center gap-1.5 truncate">
                     <Ticket size={13} className="text-amber shrink-0" />
-                    <span>{reg.scrim.fee === 0 ? "Free" : `₹${reg.scrim.fee}`}</span>
+                    <span>{reg.scrim.fee === 0 ? "Free Entry" : `₹${reg.scrim.fee}`}</span>
                   </div>
                 </div>
 
                 {/* Slot Number / Code */}
                 <div className="mt-2.5 border-t border-border/40 pt-2 flex items-center justify-between font-mono text-[11px] text-muted-foreground">
-                  <span>Slot #{reg.slotNumber > 0 ? reg.slotNumber : "Verifying"}</span>
+                  <span>Slot #{reg.slotNumber > 0 ? reg.slotNumber : (isFree ? "1" : "Verifying")}</span>
                   <span className="truncate max-w-[140px] text-[10px]">{reg.registrationCode}</span>
                 </div>
               </div>
