@@ -139,6 +139,8 @@ model Registration {
   matchResults     MatchResult[]
 
   createdAt        DateTime         @default(now())
+
+  @@unique([userId, scrimId, slotId])
 }
 
 model Payment {

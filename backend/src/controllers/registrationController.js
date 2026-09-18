@@ -46,20 +46,19 @@ export const registerTeam = async (req, res) => {
             });
         }
 
-        // Check if user already registered for this slot
+        // Check if user already registered for this exact scrim and slot
         const existingForUser = await prisma.registration.findFirst({
             where: {
+                scrimId: slot.scrim.id,
                 slotId: Number(slotId),
                 userId: req.user.userId,
-                paymentStatus: { in: ["PAID", "PENDING"] },
             },
         });
 
         if (existingForUser) {
-            return res.status(200).json({
-                success: true,
-                data: existingForUser,
-                message: "You already have a registration for this slot",
+            return res.status(400).json({
+                success: false,
+                message: "You are already registered for this slot.",
             });
         }
 
@@ -110,6 +109,17 @@ export const registerTeam = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
+
+        if (
+            error.code === "P2002" ||
+            error.message?.includes("Unique constraint") ||
+            error.message?.includes("Duplicate entry")
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "You are already registered for this slot.",
+            });
+        }
 
         res.status(500).json({
             success: false,
@@ -269,9 +279,32 @@ export const getMyRegistrations = async (req, res) => {
             orderBy: { createdAt: "desc" },
         });
 
+        // Deduplicate in case of historical duplicate records (canonical: PAID first, then verification-requested, then newest)
+        const sorted = [...registrations].sort((a, b) => {
+            const aPaid = a.paymentStatus === "PAID" ? 1 : 0;
+            const bPaid = b.paymentStatus === "PAID" ? 1 : 0;
+            if (aPaid !== bPaid) return bPaid - aPaid;
+
+            const aReq = a.paymentVerificationRequestedAt ? 1 : 0;
+            const bReq = b.paymentVerificationRequestedAt ? 1 : 0;
+            if (aReq !== bReq) return bReq - aReq;
+
+            return b.id - a.id;
+        });
+
+        const deduplicated = [];
+        const seen = new Set();
+        for (const reg of sorted) {
+            const key = `${reg.scrimId}_${reg.slotId}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                deduplicated.push(reg);
+            }
+        }
+
         res.json({
             success: true,
-            data: registrations,
+            data: deduplicated,
         });
     } catch (error) {
         console.error(error);

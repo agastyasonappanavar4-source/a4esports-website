@@ -95,6 +95,118 @@ export async function ensureDatabaseSchema() {
             console.log("✅ MatchResult table created.");
         }
 
+        // 5. Clean existing accidental duplicate registrations before adding unique constraint
+        console.log("Checking for duplicate registrations (userId + scrimId + slotId)...");
+        const duplicateGroups = await prisma.$queryRawUnsafe(`
+            SELECT userId, scrimId, slotId, COUNT(*) as cnt
+            FROM \`Registration\`
+            WHERE userId IS NOT NULL
+            GROUP BY userId, scrimId, slotId
+            HAVING cnt > 1
+        `);
+
+        let totalDuplicatesRemoved = 0;
+
+        if (duplicateGroups && duplicateGroups.length > 0) {
+            console.log(`Found ${duplicateGroups.length} duplicate registration group(s). Cleaning safely...`);
+            for (const group of duplicateGroups) {
+                const uId = Number(group.userId);
+                const sId = Number(group.scrimId);
+                const slId = Number(group.slotId);
+
+                // Fetch all registrations in this group
+                const groupRegs = await prisma.registration.findMany({
+                    where: { userId: uId, scrimId: sId, slotId: slId },
+                    include: { payment: true, matchResults: true },
+                    orderBy: { id: "asc" },
+                });
+
+                if (groupRegs.length <= 1) continue;
+
+                // Sort: PAID first, then verification requested, then earliest created (lowest id)
+                groupRegs.sort((a, b) => {
+                    const aPaid = a.paymentStatus === "PAID" ? 1 : 0;
+                    const bPaid = b.paymentStatus === "PAID" ? 1 : 0;
+                    if (aPaid !== bPaid) return bPaid - aPaid;
+
+                    const aReq = a.paymentVerificationRequestedAt ? 1 : 0;
+                    const bReq = b.paymentVerificationRequestedAt ? 1 : 0;
+                    if (aReq !== bReq) return bReq - aReq;
+
+                    return a.id - b.id;
+                });
+
+                const canonical = groupRegs[0];
+                const duplicates = groupRegs.slice(1);
+
+                console.log(
+                    `Group [User: ${uId}, Scrim: ${sId}, Slot: ${slId}]: keeping canonical Registration #${canonical.id} (${canonical.paymentStatus}), removing ${duplicates.length} duplicate(s)`
+                );
+
+                for (const dup of duplicates) {
+                    // Safe handling of Payment relation
+                    if (dup.payment) {
+                        if (!canonical.payment) {
+                            await prisma.payment.update({
+                                where: { id: dup.payment.id },
+                                data: { registrationId: canonical.id },
+                            });
+                        } else {
+                            await prisma.payment.delete({
+                                where: { id: dup.payment.id },
+                            });
+                        }
+                    }
+
+                    // Safe handling of MatchResult relation
+                    if (dup.matchResults && dup.matchResults.length > 0) {
+                        for (const mr of dup.matchResults) {
+                            const canonicalHasResult = await prisma.matchResult.findFirst({
+                                where: { matchId: mr.matchId, registrationId: canonical.id },
+                            });
+                            if (!canonicalHasResult) {
+                                await prisma.matchResult.update({
+                                    where: { id: mr.id },
+                                    data: { registrationId: canonical.id },
+                                });
+                            } else {
+                                await prisma.matchResult.delete({
+                                    where: { id: mr.id },
+                                });
+                            }
+                        }
+                    }
+
+                    // Delete the duplicate registration record
+                    await prisma.registration.delete({
+                        where: { id: dup.id },
+                    });
+                    totalDuplicatesRemoved++;
+                }
+            }
+            console.log(`✅ Safely cleaned ${totalDuplicatesRemoved} duplicate registration(s).`);
+        } else {
+            console.log("No duplicate registrations found.");
+        }
+
+        // 6. Ensure unique index on Registration (userId, scrimId, slotId)
+        const uniqueIndexCheck = await prisma.$queryRawUnsafe(`
+            SELECT INDEX_NAME 
+            FROM INFORMATION_SCHEMA.STATISTICS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'Registration' 
+              AND INDEX_NAME = 'Registration_userId_scrimId_slotId_key'
+        `);
+
+        if (!uniqueIndexCheck || uniqueIndexCheck.length === 0) {
+            console.log("Adding UNIQUE index Registration_userId_scrimId_slotId_key...");
+            await prisma.$executeRawUnsafe(`
+                ALTER TABLE \`Registration\` 
+                ADD UNIQUE INDEX \`Registration_userId_scrimId_slotId_key\` (\`userId\`, \`scrimId\`, \`slotId\`);
+            `);
+            console.log("✅ Unique index Registration_userId_scrimId_slotId_key created.");
+        }
+
         console.log("Database schema is synchronized.");
     } catch (error) {
         console.warn("Schema check warning (non-fatal):", error?.message || error);

@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   Hourglass,
   ArrowRight,
-  Ticket,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyRegistrations, type MyRegistration } from "@/services/registrations";
@@ -29,7 +29,29 @@ export default function RegisteredBanner() {
 
     getMyRegistrations()
       .then((regs) => {
-        setRegistrations(regs || []);
+        // Strict deduplication safeguard by scrimId + slotId
+        // Canonical priority: PAID > PENDING with verification requested > earliest ID
+        const deduplicatedMap = new Map<string, MyRegistration>();
+        for (const reg of (regs || [])) {
+          const key = `${reg.scrim.id}_${reg.slot.id}`;
+          const existing = deduplicatedMap.get(key);
+          if (!existing) {
+            deduplicatedMap.set(key, reg);
+          } else {
+            const regPaid = reg.paymentStatus === "PAID";
+            const existingPaid = existing.paymentStatus === "PAID";
+            if (regPaid && !existingPaid) {
+              deduplicatedMap.set(key, reg);
+            } else if (
+              regPaid === existingPaid &&
+              reg.paymentVerificationRequestedAt &&
+              !existing.paymentVerificationRequestedAt
+            ) {
+              deduplicatedMap.set(key, reg);
+            }
+          }
+        }
+        setRegistrations(Array.from(deduplicatedMap.values()));
       })
       .catch(() => setRegistrations([]))
       .finally(() => setLoading(false));
@@ -41,21 +63,22 @@ export default function RegisteredBanner() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 pt-6 pb-2">
+    <section className="mx-auto w-full max-w-7xl px-3 sm:px-6 pt-5 pb-3">
+      {/* Header bar */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-ember animate-pulse-dot" />
-          <span className="font-mono text-xs uppercase tracking-widest text-ember font-bold">
-            My Registered Scrim{registrations.length > 1 ? `s (${registrations.length})` : ""}
+          <span className="h-2 w-2 rounded-full bg-amber animate-pulse" />
+          <span className="font-mono text-xs uppercase tracking-[0.18em] text-amber font-bold">
+            My Registered Scrims ({registrations.length})
           </span>
         </div>
         <span className="font-mono text-[11px] text-muted-foreground hidden sm:inline">
-          Swipe or scroll to view all
+          Swipe to view all slots
         </span>
       </div>
 
-      {/* Responsive Horizontal Scroll Container for Mobile / Grid on Desktop */}
-      <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
+      {/* Mobile-First Horizontal Scroll Container / Grid on Desktop */}
+      <div className="flex gap-3.5 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
         {registrations.map((reg) => {
           const isFree = reg.scrim.fee === 0;
           const isPending = !isFree && reg.paymentStatus === "PENDING";
@@ -65,88 +88,94 @@ export default function RegisteredBanner() {
             month: "short",
           });
 
+          // Clean status determination:
+          // PAID: "PAYMENT CONFIRMED"
+          // PENDING: "PAYMENT BEING VERIFIED"
+          // FREE: "REGISTRATION CONFIRMED" (no payment status shown for free scrims)
+          const statusText = isFree
+            ? "REGISTRATION CONFIRMED"
+            : isPending
+            ? "PAYMENT BEING VERIFIED"
+            : "PAYMENT CONFIRMED";
+
           return (
             <div
               key={reg.id}
-              className={`min-w-[280px] max-w-[340px] sm:min-w-0 sm:max-w-none flex-shrink-0 snap-start flex flex-col justify-between rounded-xl border p-4 sm:p-5 transition-all duration-200 ${
+              className={`w-[86vw] max-w-[340px] sm:w-auto shrink-0 snap-start flex flex-col justify-between rounded-xl border p-4 sm:p-5 transition-all duration-200 ${
                 isPending
-                  ? "border-amber/40 bg-amber/5 hover:border-amber/70"
-                  : "border-cyan/40 bg-cyan/5 hover:border-cyan/70"
+                  ? "border-amber/50 bg-gradient-to-b from-[#1a1712] to-[#12151b] hover:border-amber/80 shadow-[0_4px_24px_rgba(255,194,75,0.09)]"
+                  : "border-cyan/50 bg-gradient-to-b from-[#0f1d24] to-[#12151b] hover:border-cyan/80 shadow-[0_4px_24px_rgba(47,230,214,0.09)]"
               }`}
             >
               <div>
-                {/* Status Badge + Mode Header */}
+                {/* Status Badge + Mode Tag */}
                 <div className="flex items-center justify-between gap-2">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase ${
                       isPending
-                        ? "border border-amber/50 bg-amber/15 text-amber animate-pulse"
-                        : "border border-cyan/50 bg-cyan/15 text-cyan"
+                        ? "border border-amber/60 bg-amber/15 text-amber animate-pulse"
+                        : "border border-cyan/60 bg-cyan/15 text-cyan"
                     }`}
                   >
-                    {isFree ? (
-                      <>
-                        <CheckCircle2 size={11} />
-                        Registration: CONFIRMED
-                      </>
-                    ) : isPending ? (
-                      <>
-                        <Hourglass size={11} />
-                        Payment Being Verified
-                      </>
+                    {isPending ? (
+                      <Hourglass size={11} className="shrink-0" />
                     ) : (
-                      <>
-                        <CheckCircle2 size={11} />
-                        Payment Confirmed
-                      </>
+                      <CheckCircle2 size={11} className="shrink-0" />
                     )}
+                    <span className="truncate">{statusText}</span>
                   </span>
 
-                  <span className="font-mono text-[11px] text-muted-foreground uppercase">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground border border-border/60 rounded px-1.5 py-0.5 shrink-0">
                     {reg.scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
                   </span>
                 </div>
 
-                {/* Scrim Title */}
-                <h3 className="mt-2.5 truncate font-display text-lg font-bold uppercase text-foreground">
+                {/* Tournament Title */}
+                <h3 className="mt-3 truncate font-display text-base sm:text-lg font-bold uppercase tracking-wide text-foreground">
                   {reg.scrim.title}
                 </h3>
 
-                {/* Details Grid */}
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-mono text-muted-foreground">
+                {/* Tactical Meta Grid */}
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-mono text-muted-foreground bg-panel/60 rounded-lg p-2.5 border border-border/40">
                   <div className="flex items-center gap-1.5 truncate">
                     <Calendar size={13} className="text-ember shrink-0" />
-                    <span className="truncate">{formattedDate}</span>
+                    <span className="truncate text-foreground/90">{formattedDate}</span>
                   </div>
                   <div className="flex items-center gap-1.5 truncate">
                     <Clock size={13} className="text-ember shrink-0" />
-                    <span className="truncate">{timing}</span>
+                    <span className="truncate text-ember font-semibold">{timing}</span>
                   </div>
                   <div className="flex items-center gap-1.5 truncate">
                     <Users size={13} className="text-cyan shrink-0" />
-                    <span className="truncate font-medium text-foreground">{reg.teamName}</span>
+                    <span className="truncate font-semibold text-foreground">{reg.teamName}</span>
                   </div>
                   <div className="flex items-center gap-1.5 truncate">
-                    <Ticket size={13} className="text-amber shrink-0" />
-                    <span>{reg.scrim.fee === 0 ? "Free Entry" : `₹${reg.scrim.fee}`}</span>
+                    <Shield size={13} className="text-amber shrink-0" />
+                    <span className="truncate font-semibold text-amber">
+                      Slot #{reg.slotNumber > 0 ? reg.slotNumber : (isFree ? "1" : "Pending")}
+                    </span>
                   </div>
                 </div>
 
-                {/* Slot Number / Code */}
-                <div className="mt-2.5 border-t border-border/40 pt-2 flex items-center justify-between font-mono text-[11px] text-muted-foreground">
-                  <span>Slot #{reg.slotNumber > 0 ? reg.slotNumber : (isFree ? "1" : "Verifying")}</span>
-                  <span className="truncate max-w-[140px] text-[10px]">{reg.registrationCode}</span>
+                {/* Registration Code */}
+                <div className="mt-2.5 flex items-center justify-between font-mono text-[10px] text-muted-foreground px-0.5">
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground/80">
+                    REG ID:
+                  </span>
+                  <span className="truncate font-mono text-muted-foreground/90 font-medium">
+                    {reg.registrationCode}
+                  </span>
                 </div>
               </div>
 
-              {/* VIEW MORE Button */}
-              <div className="mt-4 pt-2">
+              {/* Action Button: VIEW MORE */}
+              <div className="mt-4 pt-1">
                 <Link
                   href={`/my-match/${reg.id}`}
-                  className={`btn-press flex w-full items-center justify-center gap-2 rounded-lg py-2.5 font-display text-xs font-bold uppercase tracking-wide transition ${
+                  className={`btn-press flex h-10 w-full items-center justify-center gap-2 rounded-lg font-display text-xs font-bold uppercase tracking-wider transition ${
                     isPending
-                      ? "border border-amber/50 bg-amber/10 text-amber hover:bg-amber hover:text-void"
-                      : "border border-cyan/50 bg-cyan/10 text-cyan hover:bg-cyan hover:text-void"
+                      ? "border border-amber/50 bg-amber/15 text-amber hover:bg-amber hover:text-void shadow-[0_0_12px_rgba(255,194,75,0.15)]"
+                      : "border border-cyan/50 bg-cyan/15 text-cyan hover:bg-cyan hover:text-void shadow-[0_0_12px_rgba(47,230,214,0.15)]"
                   }`}
                 >
                   View More
