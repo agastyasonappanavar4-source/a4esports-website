@@ -52,3 +52,36 @@ export async function verifyPayment(payload: VerifyPaymentPayload) {
 
   return data;
 }
+
+export async function requestPaymentVerification(registrationId: number) {
+  const response = await fetch(`${API_URL}/api/payments/request-verification`, {
+    method: "POST",
+    credentials: "include",
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ registrationId }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to submit payment verification request");
+  }
+
+  return data;
+}
+
+export async function getPaymentStatus(registrationId: number) {
+  const response = await fetch(`${API_URL}/api/payments/status/${registrationId}`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch payment status");
+  }
+
+  return data.data;
+}
+

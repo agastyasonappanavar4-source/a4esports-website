@@ -65,10 +65,10 @@ export const getScrimById = async (req, res) => {
     }
 };
 
-// CREATE scrim (lobby). Optionally accepts `slots: string[]` of SlotTime values to create alongside it.
+// CREATE scrim (lobby). Automatically creates exactly 4 configurable time slots.
 export const createScrim = async (req, res) => {
     try {
-        const { title, mode, fee, date, image, prizePool, rules, maxTeams, slots } = req.body;
+        const { title, mode, fee, date, image, prizePool, rules, maxTeams, slotTimes } = req.body;
 
         if (!title || !mode || !date || !maxTeams) {
             return res.status(400).json({
@@ -76,6 +76,13 @@ export const createScrim = async (req, res) => {
                 message: "Title, mode, date and maxTeams are required.",
             });
         }
+
+        const defaultSlotDefs = [
+            { time: "PM_3", customTime: slotTimes?.[0] || "3:00 PM" },
+            { time: "PM_6", customTime: slotTimes?.[1] || "6:00 PM" },
+            { time: "PM_9", customTime: slotTimes?.[2] || "9:00 PM" },
+            { time: "AM_12", customTime: slotTimes?.[3] || "12:00 AM" },
+        ];
 
         const scrim = await prisma.scrim.create({
             data: {
@@ -87,11 +94,13 @@ export const createScrim = async (req, res) => {
                 prizePool: prizePool || "TBD",
                 rules: rules || "",
                 maxTeams: Number(maxTeams),
-                ...(Array.isArray(slots) && slots.length > 0 && {
-                    slots: {
-                        create: slots.map((time) => ({ time })),
-                    },
-                }),
+                slots: {
+                    create: defaultSlotDefs.map((s) => ({
+                        time: s.time,
+                        customTime: s.customTime,
+                        status: "OPEN",
+                    })),
+                },
             },
             include: slotInclude,
         });

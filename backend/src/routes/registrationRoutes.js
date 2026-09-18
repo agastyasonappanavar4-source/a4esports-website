@@ -18,7 +18,7 @@ router.get("/me", verifyToken, getMyRegistrations);
 router.get("/scrim/:scrimId", verifyToken, verifyAdmin, getRegistrationsByScrim);
 router.get("/slot/:slotId", verifyToken, verifyAdmin, getRegistrationsBySlot);
 router.delete("/:id", verifyToken, verifyAdmin, removeRegistration);
-router.get("/:id", getRegistrationById);
-router.get("/:id/details", getRegistrationDetails);
+router.get("/:id", verifyToken, getRegistrationById);
+router.get("/:id/details", verifyToken, getRegistrationDetails);
 
 export default router;

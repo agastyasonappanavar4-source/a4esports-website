@@ -9,6 +9,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
+import matchRoutes from "./routes/matchRoutes.js";
 
 
 const app = express();
@@ -57,6 +58,7 @@ app.use("/api/registrations", registrationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/matches", matchRoutes);
 
 const PORT = process.env.PORT || 5000;
 

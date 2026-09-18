@@ -1,7 +1,7 @@
 export type SlotTime = "PM_3" | "PM_6" | "PM_9" | "AM_12";
 
 export const BR_SLOT_TIMES: SlotTime[] = ["PM_3", "PM_6", "PM_9", "AM_12"];
-export const CS_SLOT_TIMES: SlotTime[] = ["PM_3", "PM_6", "PM_9"];
+export const CS_SLOT_TIMES: SlotTime[] = ["PM_3", "PM_6", "PM_9", "AM_12"];
 
 export const SLOT_TIME_LABELS: Record<SlotTime, string> = {
   PM_3: "3:00 PM",
@@ -18,9 +18,18 @@ export const SLOT_TIME_HOURS: Record<SlotTime, number> = {
   AM_12: 0,
 };
 
-export function slotTimeLabel(time: SlotTime): string {
-  return SLOT_TIME_LABELS[time] ?? time;
+export function slotTimeLabel(
+  slotOrTime?: SlotTime | { time: SlotTime; customTime?: string | null },
+  customTimeOverride?: string | null
+): string {
+  if (!slotOrTime) return "";
+  if (typeof slotOrTime === "object") {
+    return slotOrTime.customTime || SLOT_TIME_LABELS[slotOrTime.time] || slotOrTime.time;
+  }
+  if (customTimeOverride) return customTimeOverride;
+  return SLOT_TIME_LABELS[slotOrTime] ?? slotOrTime;
 }
+
 
 export function combineDateWithSlot(date: string, time: SlotTime): Date {
   const d = new Date(date);

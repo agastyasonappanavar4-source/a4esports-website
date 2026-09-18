@@ -2,11 +2,22 @@ import prisma from "../config/prisma.js";
 
 const VALID_TIMES = ["PM_3", "PM_6", "PM_9", "AM_12"];
 
-// CREATE slot under a scrim
+// CREATE slot under a scrim (Enforces exactly 4 slots constraint)
 export const createSlot = async (req, res) => {
     try {
         const { scrimId } = req.params;
-        const { time, maxTeams } = req.body;
+        const { time, customTime, maxTeams } = req.body;
+
+        const currentSlotsCount = await prisma.slot.count({
+            where: { scrimId: Number(scrimId) },
+        });
+
+        if (currentSlotsCount >= 4) {
+            return res.status(400).json({
+                success: false,
+                message: "Each scrim must have exactly 4 time slots. You cannot create a 5th slot.",
+            });
+        }
 
         if (!VALID_TIMES.includes(time)) {
             return res.status(400).json({
@@ -35,6 +46,7 @@ export const createSlot = async (req, res) => {
         const slot = await prisma.slot.create({
             data: {
                 time,
+                customTime: customTime || null,
                 scrimId: Number(scrimId),
                 ...(maxTeams !== undefined && maxTeams !== null && { maxTeams: Number(maxTeams) }),
             },
@@ -47,15 +59,16 @@ export const createSlot = async (req, res) => {
     }
 };
 
-// UPDATE slot (maxTeams override, etc.)
+// UPDATE slot (customTime, maxTeams override, etc.)
 export const updateSlot = async (req, res) => {
     try {
         const { id } = req.params;
-        const { maxTeams } = req.body;
+        const { customTime, maxTeams } = req.body;
 
         const slot = await prisma.slot.update({
             where: { id: Number(id) },
             data: {
+                ...(customTime !== undefined && { customTime }),
                 ...(maxTeams !== undefined && { maxTeams: maxTeams === null ? null : Number(maxTeams) }),
             },
         });
@@ -67,29 +80,12 @@ export const updateSlot = async (req, res) => {
     }
 };
 
-// DELETE slot
+// DELETE slot - disallowed to preserve exactly 4 slots
 export const deleteSlot = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const registrationCount = await prisma.registration.count({
-            where: { slotId: Number(id) },
-        });
-
-        if (registrationCount > 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Cannot delete a slot that already has registrations. Close it instead.",
-            });
-        }
-
-        await prisma.slot.delete({ where: { id: Number(id) } });
-
-        res.json({ success: true, message: "Slot deleted." });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Failed to delete slot" });
-    }
+    return res.status(400).json({
+        success: false,
+        message: "Each scrim must have exactly 4 time slots. Deletion is not allowed; toggle the slot status to CLOSED instead.",
+    });
 };
 
 // TOGGLE slot open/closed (this is the "turn off today's 3pm lobby" action)

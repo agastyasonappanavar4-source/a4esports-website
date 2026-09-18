@@ -5,6 +5,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export interface RegistrationSlot {
   id: number;
   time: SlotTime;
+  customTime?: string | null;
   status: "OPEN" | "CLOSED";
   maxTeams: number | null;
   roomId: string | null;
@@ -20,10 +21,13 @@ export interface MyRegistration {
   phone: string;
   slotNumber: number;
   paymentStatus: "PENDING" | "PAID" | "FAILED";
+  paymentVerificationRequestedAt?: string | null;
+  paymentVerifiedAt?: string | null;
   createdAt: string;
   scrim: {
     id: number;
     title: string;
+    image?: string;
     mode: "BR" | "CS";
     fee: number;
     date: string;
@@ -57,14 +61,27 @@ export async function getMyRegistrations(): Promise<MyRegistration[]> {
   return data.data;
 }
 
+export async function getRegistrationById(id: number): Promise<MyRegistration> {
+  const response = await fetch(`${API_URL}/api/registrations/${id}`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to load registration");
+  }
+  return data.data;
+}
+
 export interface RegistrationDetails {
   registration: MyRegistration;
   scrim: MyRegistration["scrim"];
   slot: RegistrationSlot;
-  teams: { teamName: string; slotNumber: number }[];
+  teams: { id: number; teamName: string; slotNumber: number }[];
   totalTeams: number;
   remainingSlots: number;
   roomReleased: boolean;
+  isVerified?: boolean;
 }
 
 export async function getRegistrationDetails(
@@ -80,3 +97,4 @@ export async function getRegistrationDetails(
   }
   return data.data;
 }
+

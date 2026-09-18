@@ -179,7 +179,15 @@ export interface AdminRegistration {
   slotNumber: number;
   slotId: number;
   paymentStatus: "PENDING" | "PAID" | "FAILED";
+  paymentVerificationRequestedAt?: string | null;
+  paymentVerifiedAt?: string | null;
+  rejectionReason?: string | null;
   createdAt: string;
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+  };
 }
 
 export async function getRegistrationsByScrimRequest(
@@ -236,6 +244,7 @@ export interface AdminRegistrationWithDetails extends AdminRegistration {
   slot: {
     id: number;
     time: SlotTime;
+    customTime?: string | null;
   };
   user?: {
     id: number;
@@ -269,4 +278,169 @@ export async function adminRegisterTeamRequest(payload: {
   const data = await handle(response);
   return data.data;
 }
+
+// ---- Pending payment verifications & actions ----
+
+export interface PendingPaymentItem {
+  id: number;
+  registrationCode: string;
+  teamName: string;
+  iglName: string;
+  phone: string;
+  slotNumber: number;
+  paymentStatus: "PENDING";
+  paymentVerificationRequestedAt: string;
+  createdAt: string;
+  user?: { id: number; username: string; email: string };
+  scrim: { id: number; title: string; fee: number; mode: "BR" | "CS" };
+  slot: { id: number; time: SlotTime; customTime?: string | null };
+}
+
+export async function getPendingPaymentsRequest(): Promise<{ count: number; data: PendingPaymentItem[] }> {
+  const response = await fetch(`${API_URL}/api/admin/pending-payments`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  const data = await handle(response);
+  return { count: data.count, data: data.data };
+}
+
+export async function verifyPaymentRequest(registrationId: number) {
+  const response = await fetch(`${API_URL}/api/admin/verify-payment/${registrationId}`, {
+    method: "POST",
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  return handle(response);
+}
+
+export async function rejectPaymentRequest(registrationId: number, reason?: string) {
+  const response = await fetch(`${API_URL}/api/admin/reject-payment/${registrationId}`, {
+    method: "POST",
+    credentials: "include",
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ reason }),
+  });
+  return handle(response);
+}
+
+export async function moveRegistrationSlotRequest(registrationId: number, newSlotId: number) {
+  const response = await fetch(`${API_URL}/api/admin/registrations/${registrationId}/move-slot`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ newSlotId }),
+  });
+  return handle(response);
+}
+
+// ---- Matches & Results ----
+
+export interface MatchResultItem {
+  id?: number;
+  registrationId: number;
+  rank: number;
+  won: number;
+  pp: number;
+  kp: number;
+  tp: number;
+  registration?: {
+    id: number;
+    teamName: string;
+    iglName: string;
+    slotNumber: number;
+  };
+}
+
+export interface SlotMatch {
+  id: number;
+  slotId: number;
+  matchNumber: number;
+  title: string;
+  status: string;
+  results: MatchResultItem[];
+}
+
+export interface OverallStandingItem {
+  registrationId: number;
+  teamName: string;
+  slotNumber: number;
+  matchesPlayed: number;
+  won: number;
+  pp: number;
+  kp: number;
+  tp: number;
+}
+
+export async function getSlotMatchesRequest(
+  slotId: number
+): Promise<{ matches: SlotMatch[]; overallStandings: OverallStandingItem[] }> {
+  const response = await fetch(`${API_URL}/api/matches/slot/${slotId}`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  const data = await handle(response);
+  return data.data;
+}
+
+export async function createSlotMatchRequest(
+  slotId: number,
+  payload: {
+    matchNumber?: number;
+    title?: string;
+    results?: {
+      registrationId: number;
+      rank: number;
+      won?: number;
+      pp?: number;
+      kp?: number;
+      tp?: number;
+    }[];
+  }
+): Promise<SlotMatch> {
+  const response = await fetch(`${API_URL}/api/matches/slot/${slotId}`, {
+    method: "POST",
+    credentials: "include",
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+  const data = await handle(response);
+  return data.data;
+}
+
+export async function updateSlotMatchRequest(
+  matchId: number,
+  payload: {
+    matchNumber?: number;
+    title?: string;
+    status?: string;
+    results?: {
+      registrationId: number;
+      rank: number;
+      won?: number;
+      pp?: number;
+      kp?: number;
+      tp?: number;
+    }[];
+  }
+): Promise<SlotMatch> {
+  const response = await fetch(`${API_URL}/api/matches/${matchId}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+  const data = await handle(response);
+  return data.data;
+}
+
+export async function deleteSlotMatchRequest(matchId: number) {
+  const response = await fetch(`${API_URL}/api/matches/${matchId}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  return handle(response);
+}
+
 

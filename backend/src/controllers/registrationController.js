@@ -32,17 +32,34 @@ export const registerTeam = async (req, res) => {
 
         const effectiveMaxTeams = slot.maxTeams ?? slot.scrim.maxTeams;
 
-        const totalRegistrations = await prisma.registration.count({
+        const totalPaidRegistrations = await prisma.registration.count({
             where: {
                 slotId: Number(slotId),
                 paymentStatus: "PAID",
             },
         });
 
-        if (totalRegistrations >= effectiveMaxTeams) {
+        if (totalPaidRegistrations >= effectiveMaxTeams) {
             return res.status(400).json({
                 success: false,
                 message: "This time slot is full",
+            });
+        }
+
+        // Check if user already registered for this slot
+        const existingForUser = await prisma.registration.findFirst({
+            where: {
+                slotId: Number(slotId),
+                userId: req.user.userId,
+                paymentStatus: { in: ["PAID", "PENDING"] },
+            },
+        });
+
+        if (existingForUser) {
+            return res.status(200).json({
+                success: true,
+                data: existingForUser,
+                message: "You already have a registration for this slot",
             });
         }
 
@@ -57,13 +74,13 @@ export const registerTeam = async (req, res) => {
         if (existingTeam) {
             return res.status(400).json({
                 success: false,
-                message: "Team already registered for this time slot",
+                message: "Team already registered and confirmed for this time slot",
             });
         }
 
         const isFree = slot.scrim.fee === 0;
         const paymentStatus = isFree ? "PAID" : "PENDING";
-        const slotNumber = isFree ? totalRegistrations + 1 : 0;
+        const slotNumber = isFree ? totalPaidRegistrations + 1 : 0;
 
         const registrationCode = isFree
             ? `${slot.scrim.mode}${slot.scrim.id}-${slot.time}-${String(slotNumber).padStart(4, "0")}`
@@ -80,6 +97,10 @@ export const registerTeam = async (req, res) => {
                 slotId: Number(slotId),
                 userId: req.user.userId,
                 paymentStatus,
+            },
+            include: {
+                scrim: true,
+                slot: true,
             },
         });
 
@@ -116,6 +137,14 @@ export const getRegistrationById = async (req, res) => {
             });
         }
 
+        // Ownership guard
+        if (req.user && !req.user.isAdmin && registration.userId !== req.user.userId) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied to this registration",
+            });
+        }
+
         res.json({
             success: true,
             data: registration,
@@ -149,10 +178,39 @@ export const getRegistrationDetails = async (req, res) => {
             });
         }
 
-        if (registration.scrim.fee > 0 && registration.paymentStatus !== "PAID") {
+        // Server-side ownership guard
+        if (req.user && !req.user.isAdmin && registration.userId !== req.user.userId) {
             return res.status(403).json({
                 success: false,
-                message: "Payment required for this registration",
+                message: "Access denied to this registration",
+            });
+        }
+
+        const isVerified = registration.paymentStatus === "PAID" || registration.scrim.fee === 0;
+
+        // If payment is pending/not verified, return limited registration info and hide room details
+        if (!isVerified) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    registration,
+                    scrim: registration.scrim,
+                    slot: {
+                        id: registration.slot.id,
+                        time: registration.slot.time,
+                        customTime: registration.slot.customTime,
+                        status: registration.slot.status,
+                        maxTeams: registration.slot.maxTeams,
+                        roomReleased: false,
+                        roomId: null,
+                        roomPassword: null,
+                    },
+                    teams: [],
+                    totalTeams: 0,
+                    remainingSlots: 0,
+                    roomReleased: false,
+                    isVerified: false,
+                },
             });
         }
 
@@ -162,6 +220,7 @@ export const getRegistrationDetails = async (req, res) => {
                 paymentStatus: "PAID",
             },
             select: {
+                id: true,
                 teamName: true,
                 slotNumber: true,
             },
@@ -177,11 +236,16 @@ export const getRegistrationDetails = async (req, res) => {
             data: {
                 registration,
                 scrim: registration.scrim,
-                slot: registration.slot,
+                slot: {
+                    ...registration.slot,
+                    roomId: registration.slot.roomReleased ? registration.slot.roomId : null,
+                    roomPassword: registration.slot.roomReleased ? registration.slot.roomPassword : null,
+                },
                 teams,
                 totalTeams: teams.length,
-                remainingSlots: effectiveMaxTeams - teams.length,
+                remainingSlots: Math.max(0, effectiveMaxTeams - teams.length),
                 roomReleased: registration.slot.roomReleased,
+                isVerified: true,
             },
         });
     } catch (error) {
@@ -193,12 +257,13 @@ export const getRegistrationDetails = async (req, res) => {
         });
     }
 };
+
 export const getMyRegistrations = async (req, res) => {
     try {
         const registrations = await prisma.registration.findMany({
             where: {
                 userId: req.user.userId,
-                paymentStatus: "PAID",
+                paymentStatus: { in: ["PAID", "PENDING"] },
             },
             include: { scrim: true, slot: true },
             orderBy: { createdAt: "desc" },
@@ -217,16 +282,13 @@ export const getMyRegistrations = async (req, res) => {
         });
     }
 };
-// chatgpt
+
 export const getRegistrationsByScrim = async (req, res) => {
     try {
         const scrimId = Number(req.params.scrimId);
 
         const registrations = await prisma.registration.findMany({
-            where: {
-                scrimId,
-                paymentStatus: "PAID",
-            },
+            where: { scrimId },
             include: {
                 user: {
                     select: {
@@ -259,16 +321,27 @@ export const getRegistrationsBySlot = async (req, res) => {
         const slotId = Number(req.params.slotId);
 
         const registrations = await prisma.registration.findMany({
-            where: { slotId, paymentStatus: "PAID" },
+            where: { slotId },
             include: {
                 user: {
                     select: { id: true, username: true, email: true },
                 },
+                scrim: true,
+                slot: true,
             },
-            orderBy: { slotNumber: "asc" },
+            orderBy: [{ paymentStatus: "asc" }, { slotNumber: "asc" }, { createdAt: "asc" }],
         });
 
         res.status(200).json({ success: true, data: registrations });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch registrations",
+        });
+    }
+};
     } catch (error) {
         console.error(error);
 

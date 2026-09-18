@@ -2,71 +2,154 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Clock3, ArrowRight } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Users,
+  CheckCircle2,
+  Hourglass,
+  ArrowRight,
+  Ticket,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyRegistrations, type MyRegistration } from "@/services/registrations";
-import { combineDateWithSlot } from "@/lib/slotTime";
-import { getCountdown } from "@/lib/countdown";
+import { slotTimeLabel } from "@/lib/slotTime";
 
 export default function RegisteredBanner() {
   const { user } = useAuth();
-  const [reg, setReg] = useState<MyRegistration | null>(null);
-  const [countdown, setCountdown] = useState("");
+  const [registrations, setRegistrations] = useState<MyRegistration[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setRegistrations([]);
+      setLoading(false);
+      return;
+    }
 
     getMyRegistrations()
       .then((regs) => {
-        const upcoming = regs
-          .filter((r) => combineDateWithSlot(r.scrim.date, r.slot.time).getTime() > Date.now())
-          .sort(
-            (a, b) =>
-              combineDateWithSlot(a.scrim.date, a.slot.time).getTime() -
-              combineDateWithSlot(b.scrim.date, b.slot.time).getTime()
-          );
-
-        setReg(upcoming[0] || null);
+        setRegistrations(regs || []);
       })
-      .catch(() => setReg(null));
+      .catch(() => setRegistrations([]))
+      .finally(() => setLoading(false));
   }, [user]);
 
-  useEffect(() => {
-    if (!reg) return;
-
-    const target = combineDateWithSlot(reg.scrim.date, reg.slot.time);
-    const update = () => setCountdown(getCountdown(target));
-    update();
-
-    const interval = setInterval(update, 60000);
-    return () => clearInterval(interval);
-  }, [reg]);
-
-  if (!reg) return null;
+  // Only visible when user is authenticated AND has registrations
+  if (!user || loading || registrations.length === 0) {
+    return null;
+  }
 
   return (
-    <section className="mx-auto mt-6 max-w-7xl px-5">
-      <div className="flex flex-col items-start justify-between gap-5 border border-ember/40 bg-ember/10 p-6 md:flex-row md:items-center">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-ember">
-            🔥 You&apos;re Registered
-          </p>
-          <h2 className="mt-2 font-display text-2xl font-bold uppercase text-foreground">
-            {reg.scrim.title}
-          </h2>
-          <div className="mt-3 flex items-center gap-2 font-mono text-sm text-muted-foreground">
-            <Clock3 size={16} className="text-ember" />
-            Starts in <span className="font-semibold text-foreground">{countdown}</span>
-          </div>
+    <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 pt-6 pb-2">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-ember animate-pulse-dot" />
+          <span className="font-mono text-xs uppercase tracking-widest text-ember font-bold">
+            Your Registrations ({registrations.length})
+          </span>
         </div>
+        <span className="font-mono text-[11px] text-muted-foreground hidden sm:inline">
+          Swipe or scroll to view all
+        </span>
+      </div>
 
-        <Link
-          href={`/my-match/${reg.id}`}
-          className="flex items-center gap-2 bg-ember px-6 py-3.5 font-display font-bold uppercase tracking-wide text-void transition hover:bg-[var(--ember-deep)] [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,10px_100%,0_calc(100%-10px))]"
-        >
-          Know More
-          <ArrowRight size={18} />
-        </Link>
+      {/* Responsive Horizontal Scroll Container for Mobile / Grid on Desktop */}
+      <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
+        {registrations.map((reg) => {
+          const isPending = reg.paymentStatus === "PENDING";
+          const timing = slotTimeLabel(reg.slot);
+          const formattedDate = new Date(reg.scrim.date).toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+          });
+
+          return (
+            <div
+              key={reg.id}
+              className={`min-w-[280px] max-w-[340px] sm:min-w-0 sm:max-w-none flex-shrink-0 snap-start flex flex-col justify-between rounded-xl border p-4 sm:p-5 transition-all duration-200 ${
+                isPending
+                  ? "border-amber/40 bg-amber/5 hover:border-amber/70"
+                  : "border-cyan/40 bg-cyan/5 hover:border-cyan/70"
+              }`}
+            >
+              <div>
+                {/* Status Badge + Mode Header */}
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase ${
+                      isPending
+                        ? "border border-amber/50 bg-amber/15 text-amber animate-pulse"
+                        : "border border-cyan/50 bg-cyan/15 text-cyan"
+                    }`}
+                  >
+                    {isPending ? (
+                      <>
+                        <Hourglass size={11} />
+                        Payment Being Verified
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={11} />
+                        Payment Confirmed
+                      </>
+                    )}
+                  </span>
+
+                  <span className="font-mono text-[11px] text-muted-foreground uppercase">
+                    {reg.scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
+                  </span>
+                </div>
+
+                {/* Scrim Title */}
+                <h3 className="mt-2.5 truncate font-display text-lg font-bold uppercase text-foreground">
+                  {reg.scrim.title}
+                </h3>
+
+                {/* Details Grid */}
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-mono text-muted-foreground">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Calendar size={13} className="text-ember shrink-0" />
+                    <span className="truncate">{formattedDate}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Clock size={13} className="text-ember shrink-0" />
+                    <span className="truncate">{timing}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Users size={13} className="text-cyan shrink-0" />
+                    <span className="truncate font-medium text-foreground">{reg.teamName}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Ticket size={13} className="text-amber shrink-0" />
+                    <span>{reg.scrim.fee === 0 ? "Free" : `₹${reg.scrim.fee}`}</span>
+                  </div>
+                </div>
+
+                {/* Slot Number / Code */}
+                <div className="mt-2.5 border-t border-border/40 pt-2 flex items-center justify-between font-mono text-[11px] text-muted-foreground">
+                  <span>Slot #{reg.slotNumber > 0 ? reg.slotNumber : "Verifying"}</span>
+                  <span className="truncate max-w-[140px] text-[10px]">{reg.registrationCode}</span>
+                </div>
+              </div>
+
+              {/* VIEW MORE Button */}
+              <div className="mt-4 pt-2">
+                <Link
+                  href={`/my-match/${reg.id}`}
+                  className={`btn-press flex w-full items-center justify-center gap-2 rounded-lg py-2.5 font-display text-xs font-bold uppercase tracking-wide transition ${
+                    isPending
+                      ? "border border-amber/50 bg-amber/10 text-amber hover:bg-amber hover:text-void"
+                      : "border border-cyan/50 bg-cyan/10 text-cyan hover:bg-cyan hover:text-void"
+                  }`}
+                >
+                  View More
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

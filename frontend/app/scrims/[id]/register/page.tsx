@@ -99,36 +99,9 @@ function ScrimRegisterForm() {
         return;
       }
 
-      const order = await createOrder(registration.id);
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: "A4esports",
-        description: scrim.title,
-        order_id: order.id,
-        handler: async (response: RazorpaySuccessResponse) => {
-          try {
-            await verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              registrationId: registration.id,
-              method: "razorpay",
-            });
-            goHomeRegistered();
-          } catch {
-            setCriticalError(
-              "We could not confirm your payment. If you were charged, contact a4esportsindia@gmail.com with your payment ID."
-            );
-          }
-        },
-        theme: { color: "#FF5A1F" },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      // Route directly to dedicated manual UPI payment page
+      showToast("Registration saved! Proceeding to payment...", "success");
+      router.push(`/payment/${registration.id}`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Something went wrong.", "error");
     } finally {

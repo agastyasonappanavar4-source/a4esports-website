@@ -4,6 +4,7 @@ import type { SlotTime } from "./slotTime";
 export interface Slot {
   id: number;
   time: SlotTime;
+  customTime?: string | null;
   status: "OPEN" | "CLOSED";
   maxTeams: number | null;
   roomId?: string | null;

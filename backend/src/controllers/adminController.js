@@ -189,3 +189,212 @@ export const adminRegisterTeam = async (req, res) => {
     }
 };
 
+// GET PENDING PAYMENTS FOR ADMIN NOTIFICATIONS / VERIFICATIONS
+export const getPendingPayments = async (req, res) => {
+    try {
+        const pending = await prisma.registration.findMany({
+            where: {
+                paymentStatus: "PENDING",
+                paymentVerificationRequestedAt: { not: null },
+            },
+            include: {
+                user: {
+                    select: { id: true, username: true, email: true },
+                },
+                scrim: {
+                    select: { id: true, title: true, fee: true, mode: true },
+                },
+                slot: {
+                    select: { id: true, time: true, customTime: true },
+                },
+            },
+            orderBy: { paymentVerificationRequestedAt: "desc" },
+        });
+
+        res.json({
+            success: true,
+            count: pending.length,
+            data: pending,
+        });
+    } catch (error) {
+        console.error("Get Pending Payments Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch pending payments",
+        });
+    }
+};
+
+// VERIFY MANUAL UPI PAYMENT (ADMIN ONLY)
+export const verifyManualPayment = async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+
+        const registration = await prisma.registration.findUnique({
+            where: { id: Number(registrationId) },
+            include: { slot: { include: { scrim: true } } },
+        });
+
+        if (!registration) {
+            return res.status(404).json({ success: false, message: "Registration not found" });
+        }
+
+        if (registration.paymentStatus === "PAID") {
+            return res.json({ success: true, message: "Payment already verified", data: registration });
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const paidCount = await tx.registration.count({
+                where: { slotId: registration.slotId, paymentStatus: "PAID" },
+            });
+            const effectiveMax = registration.slot.maxTeams ?? registration.slot.scrim.maxTeams;
+            if (paidCount >= effectiveMax) {
+                throw new Error("This slot has reached maximum team capacity.");
+            }
+
+            const highestSlot = await tx.registration.aggregate({
+                where: { slotId: registration.slotId, paymentStatus: "PAID" },
+                _max: { slotNumber: true },
+            });
+            const finalSlotNumber = (highestSlot._max.slotNumber ?? 0) + 1;
+            const finalCode = `${registration.slot.scrim.mode}${registration.slot.scrim.id}-${registration.slot.time}-${String(finalSlotNumber).padStart(4, "0")}`;
+
+            // Upsert Payment record
+            await tx.payment.upsert({
+                where: { registrationId: registration.id },
+                create: {
+                    registrationId: registration.id,
+                    amount: registration.slot.scrim.fee,
+                    method: "MANUAL_UPI",
+                    transactionId: `MANUAL_UPI_${registration.id}_${Date.now()}`,
+                    status: "PAID",
+                },
+                update: {
+                    amount: registration.slot.scrim.fee,
+                    method: "MANUAL_UPI",
+                    status: "PAID",
+                },
+            });
+
+            const updated = await tx.registration.update({
+                where: { id: registration.id },
+                data: {
+                    paymentStatus: "PAID",
+                    slotNumber: finalSlotNumber,
+                    registrationCode: finalCode,
+                    paymentVerifiedAt: new Date(),
+                    verifiedByAdminId: req.user.userId,
+                    rejectionReason: null,
+                },
+                include: { scrim: true, slot: true, user: true },
+            });
+
+            return updated;
+        });
+
+        res.json({
+            success: true,
+            message: "Payment successfully verified and team confirmed.",
+            data: result,
+        });
+    } catch (error) {
+        console.error("Verify Manual Payment Error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to verify payment",
+        });
+    }
+};
+
+// REJECT MANUAL UPI PAYMENT (ADMIN ONLY)
+export const rejectManualPayment = async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const { reason } = req.body;
+
+        const registration = await prisma.registration.findUnique({
+            where: { id: Number(registrationId) },
+        });
+
+        if (!registration) {
+            return res.status(404).json({ success: false, message: "Registration not found" });
+        }
+
+        const updated = await prisma.registration.update({
+            where: { id: Number(registrationId) },
+            data: {
+                paymentStatus: "FAILED",
+                rejectionReason: reason || "Payment could not be verified by administrator",
+                verifiedByAdminId: req.user.userId,
+            },
+        });
+
+        res.json({
+            success: true,
+            message: "Payment rejected.",
+            data: updated,
+        });
+    } catch (error) {
+        console.error("Reject Manual Payment Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to reject payment",
+        });
+    }
+};
+
+// MOVE REGISTRATION TO ANOTHER SLOT (ADMIN ONLY)
+export const moveRegistrationSlot = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { newSlotId } = req.body;
+
+        if (!newSlotId) {
+            return res.status(400).json({ success: false, message: "newSlotId is required" });
+        }
+
+        const registration = await prisma.registration.findUnique({
+            where: { id: Number(id) },
+            include: { slot: true },
+        });
+
+        if (!registration) {
+            return res.status(404).json({ success: false, message: "Registration not found" });
+        }
+
+        const targetSlot = await prisma.slot.findUnique({
+            where: { id: Number(newSlotId) },
+            include: { scrim: true },
+        });
+
+        if (!targetSlot) {
+            return res.status(404).json({ success: false, message: "Target slot not found" });
+        }
+
+        if (targetSlot.scrimId !== registration.scrimId) {
+            return res.status(400).json({ success: false, message: "Cannot move team across different tournaments" });
+        }
+
+        const updated = await prisma.registration.update({
+            where: { id: Number(id) },
+            data: {
+                slotId: Number(newSlotId),
+            },
+            include: { slot: true, scrim: true },
+        });
+
+        res.json({
+            success: true,
+            message: "Team moved to new slot successfully",
+            data: updated,
+        });
+    } catch (error) {
+        console.error("Move Slot Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to move slot",
+        });
+    }
+};
+
+

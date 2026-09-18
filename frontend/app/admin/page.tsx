@@ -16,6 +16,7 @@ import {
   Sparkles,
   Search,
   X,
+  Clock,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -42,9 +43,12 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [scrims, setScrims] = useState<Scrim[] | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"tournaments" | "teams">("tournaments");
+  const [activeTab, setActiveTab] = useState<"tournaments" | "teams" | "pending">("tournaments");
   const [registrations, setRegistrations] = useState<AdminRegistrationWithDetails[] | null>(null);
+  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [processingPaymentId, setProcessingPaymentId] = useState<number | null>(null);
 
   // Manual add team modal state
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -62,16 +66,79 @@ export default function AdminDashboardPage() {
     }
   }, [authLoading, user, router]);
 
+  const loadPendingPayments = () => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/pending-payments`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setPendingPayments(data.data || []);
+          setPendingCount(data.count || 0);
+        }
+      })
+      .catch(() => {});
+  };
+
   const load = () => {
     getDashboardStats().then(setStats).catch(() => setStats(null));
     getScrims().then(setScrims).catch(() => setScrims([]));
     getAllRegistrationsRequest().then(setRegistrations).catch(() => setRegistrations([]));
+    loadPendingPayments();
   };
 
   useEffect(() => {
-    if (user?.isAdmin) load();
+    if (user?.isAdmin) {
+      load();
+      const interval = setInterval(loadPendingPayments, 15000);
+      return () => clearInterval(interval);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  const handleVerifyPending = async (paymentId: number, teamName: string) => {
+    setProcessingPaymentId(paymentId);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/verify-payment/${paymentId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to verify");
+      showToast(`Payment verified for team "${teamName}"!`, "success");
+      load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Verification failed", "error");
+    } finally {
+      setProcessingPaymentId(null);
+    }
+  };
+
+  const handleRejectPending = async (paymentId: number, teamName: string) => {
+    const reason = window.prompt(`Reject payment for "${teamName}"? Reason:`, "Payment not identified");
+    if (reason === null) return;
+
+    setProcessingPaymentId(paymentId);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/reject-payment/${paymentId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to reject");
+      showToast(`Payment rejected for "${teamName}".`, "success");
+      load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Rejection failed", "error");
+    } finally {
+      setProcessingPaymentId(null);
+    }
+  };
+
 
   const handleRemoveRegistration = async (id: number, teamName: string) => {
     if (!confirm(`Are you sure you want to remove team "${teamName}"? This cannot be undone.`)) return;
@@ -214,6 +281,64 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+        {/* SERVER-BACKED PENDING PAYMENT NOTIFICATION BANNER */}
+        {pendingCount > 0 && (
+          <div className="mt-6 rounded-xl border border-amber/40 bg-amber/10 p-4 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-amber animate-pulse-dot" />
+                <h2 className="font-display text-base sm:text-lg font-bold uppercase text-amber">
+                  🔔 New Payments To Verify ({pendingCount})
+                </h2>
+              </div>
+              <button
+                onClick={() => setActiveTab("pending")}
+                className="font-mono text-xs text-amber underline hover:text-amber/80 font-bold"
+              >
+                Review All ({pendingCount})
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {pendingPayments.slice(0, 3).map((p) => (
+                <div key={p.id} className="rounded-lg border border-border bg-panel p-3.5 space-y-2 font-mono text-xs">
+                  <div className="flex justify-between items-start">
+                    <span className="font-bold text-foreground truncate max-w-[150px]">{p.teamName}</span>
+                    <span className="text-amber font-bold">₹{p.scrim?.fee}</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">{p.scrim?.title} · {slotTimeLabel(p.slot)}</p>
+                  <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
+                    <span>IGL: {p.iglName}</span>
+                    <span>{p.phone}</span>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => handleVerifyPending(p.id, p.teamName)}
+                      disabled={processingPaymentId === p.id}
+                      className="flex-1 rounded bg-cyan/15 border border-cyan/40 py-1.5 font-display text-[11px] font-bold uppercase text-cyan hover:bg-cyan hover:text-void transition"
+                    >
+                      Verify
+                    </button>
+                    <button
+                      onClick={() => handleRejectPending(p.id, p.teamName)}
+                      disabled={processingPaymentId === p.id}
+                      className="rounded border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 font-display text-[11px] uppercase text-destructive hover:bg-destructive hover:text-void transition"
+                    >
+                      Reject
+                    </button>
+                    <Link
+                      href={`/admin/scrims/${p.scrim?.id}`}
+                      className="rounded border border-border px-2 py-1.5 font-display text-[11px] text-muted-foreground hover:border-cyan hover:text-cyan transition"
+                    >
+                      Slot
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {stats ? (
             statCards.map((card) => (
@@ -237,10 +362,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="mt-10 border-b border-border flex gap-6">
+        <div className="mt-10 border-b border-border flex gap-6 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveTab("tournaments")}
-            className={`pb-3.5 font-display text-lg font-bold uppercase tracking-wider transition relative ${
+            className={`pb-3.5 font-display text-lg font-bold uppercase tracking-wider transition relative whitespace-nowrap ${
               activeTab === "tournaments"
                 ? "text-cyan after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-cyan"
                 : "text-muted-foreground hover:text-foreground"
@@ -250,13 +375,28 @@ export default function AdminDashboardPage() {
           </button>
           <button
             onClick={() => setActiveTab("teams")}
-            className={`pb-3.5 font-display text-lg font-bold uppercase tracking-wider transition relative ${
+            className={`pb-3.5 font-display text-lg font-bold uppercase tracking-wider transition relative whitespace-nowrap ${
               activeTab === "teams"
                 ? "text-cyan after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-cyan"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Manage Teams
+          </button>
+          <button
+            onClick={() => setActiveTab("pending")}
+            className={`pb-3.5 font-display text-lg font-bold uppercase tracking-wider transition relative whitespace-nowrap flex items-center gap-2 ${
+              activeTab === "pending"
+                ? "text-amber after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-amber"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Pending Payments
+            {pendingCount > 0 && (
+              <span className="rounded-full bg-amber/20 border border-amber/40 px-2 py-0.5 text-xs text-amber font-mono">
+                {pendingCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -339,7 +479,7 @@ export default function AdminDashboardPage() {
                 </div>
               )}
             </>
-          ) : (
+          ) : activeTab === "teams" ? (
             <>
               <div className="flex items-center justify-between gap-4 mb-6">
                 <h2 className="font-display text-xl font-bold uppercase text-foreground">
@@ -397,7 +537,7 @@ export default function AdminDashboardPage() {
                           <td className="p-4 text-muted-foreground">{reg.phone}</td>
                           <td className="p-4">
                             <div className="text-foreground font-semibold truncate max-w-[200px]">{reg.scrim?.title}</div>
-                            <div className="text-xs text-cyan mt-0.5">{slotTimeLabel(reg.slot?.time)}</div>
+                            <div className="text-xs text-cyan mt-0.5">{slotTimeLabel(reg.slot)}</div>
                           </td>
                           <td className="p-4 text-xs font-mono break-all max-w-[150px]">{reg.registrationCode}</td>
                           <td className="p-4 text-muted-foreground">{reg.slotNumber || "-"}</td>
@@ -422,6 +562,97 @@ export default function AdminDashboardPage() {
                             >
                               <Trash2 size={16} />
                             </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="font-display text-xl font-bold uppercase text-foreground">
+                    Pending Payments Verification
+                  </h2>
+                  <p className="font-mono text-xs text-muted-foreground mt-0.5">
+                    Review and manually verify user registrations submitted through the UPI payment flow.
+                  </p>
+                </div>
+                <button
+                  onClick={loadPendingPayments}
+                  className="rounded border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground hover:border-cyan hover:text-cyan transition"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {pendingPayments.length === 0 ? (
+                <div className="border border-dashed border-border p-12 text-center">
+                  <Clock className="mx-auto h-8 w-8 text-muted-foreground/50 mb-3" />
+                  <p className="font-mono text-sm text-muted-foreground">
+                    No pending payments waiting for verification.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-border bg-panel w-full">
+                  <table className="w-full min-w-[850px] border-collapse text-left font-mono text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-panel-2 text-xs uppercase tracking-wider text-muted-foreground">
+                        <th className="p-4 font-semibold">Team Name</th>
+                        <th className="p-4 font-semibold">Tournament / Slot</th>
+                        <th className="p-4 font-semibold">IGL & Phone</th>
+                        <th className="p-4 font-semibold">Fee</th>
+                        <th className="p-4 font-semibold">Requested At</th>
+                        <th className="p-4 font-semibold text-right">Verification Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {pendingPayments.map((p) => (
+                        <tr key={p.id} className="hover:bg-panel-2/30">
+                          <td className="p-4">
+                            <span className="font-bold text-foreground block">{p.teamName}</span>
+                            <span className="text-[11px] text-muted-foreground font-mono">{p.registrationCode}</span>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-foreground font-semibold truncate max-w-[200px]">{p.scrim?.title}</div>
+                            <div className="text-xs text-cyan mt-0.5">{slotTimeLabel(p.slot)}</div>
+                          </td>
+                          <td className="p-4 text-xs text-muted-foreground space-y-0.5">
+                            <div className="text-foreground">{p.iglName}</div>
+                            <div>{p.phone}</div>
+                          </td>
+                          <td className="p-4 font-bold text-amber">₹{p.scrim?.fee}</td>
+                          <td className="p-4 text-xs text-muted-foreground">
+                            {p.paymentVerificationRequestedAt
+                              ? new Date(p.paymentVerificationRequestedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                              : "Recently"}
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleVerifyPending(p.id, p.teamName)}
+                                disabled={processingPaymentId === p.id}
+                                className="rounded bg-cyan/15 border border-cyan/40 px-3 py-1.5 font-display text-xs font-bold uppercase text-cyan hover:bg-cyan hover:text-void transition disabled:opacity-50"
+                              >
+                                {processingPaymentId === p.id ? "..." : "Verify & Allocate"}
+                              </button>
+                              <button
+                                onClick={() => handleRejectPending(p.id, p.teamName)}
+                                disabled={processingPaymentId === p.id}
+                                className="rounded border border-destructive/30 bg-destructive/10 px-3 py-1.5 font-display text-xs uppercase text-destructive hover:bg-destructive hover:text-void transition disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                              <Link
+                                href={`/admin/scrims/${p.scrim?.id}`}
+                                className="rounded border border-border px-2.5 py-1.5 font-display text-xs text-muted-foreground hover:border-cyan hover:text-cyan transition"
+                              >
+                                Manage
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       ))}

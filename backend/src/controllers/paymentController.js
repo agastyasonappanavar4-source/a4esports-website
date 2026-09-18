@@ -140,3 +140,83 @@ export const verifyPayment = async (req, res) => {
         });
     }
 };
+
+// Request Manual UPI Verification (User clicks "CONTINUE & VERIFY" after 15s)
+export const requestPaymentVerification = async (req, res) => {
+    try {
+        const { registrationId } = req.body;
+        if (!registrationId) {
+            return res.status(400).json({ success: false, message: "registrationId is required" });
+        }
+
+        const registration = await prisma.registration.findUnique({
+            where: { id: Number(registrationId) },
+        });
+
+        if (!registration) {
+            return res.status(404).json({ success: false, message: "Registration not found" });
+        }
+
+        if (registration.userId !== req.user.userId && !req.user.isAdmin) {
+            return res.status(403).json({ success: false, message: "Access denied" });
+        }
+
+        // Idempotent: record verification request timestamp without altering PENDING status
+        const updated = await prisma.registration.update({
+            where: { id: Number(registrationId) },
+            data: {
+                paymentVerificationRequestedAt: new Date(),
+            },
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Payment verification requested. Status is pending admin confirmation.",
+            data: updated,
+        });
+    } catch (error) {
+        console.error("Request Verification Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to submit verification request",
+        });
+    }
+};
+
+// Get User Payment Status
+export const getPaymentStatus = async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const registration = await prisma.registration.findUnique({
+            where: { id: Number(registrationId) },
+            include: { scrim: true, slot: true },
+        });
+
+        if (!registration) {
+            return res.status(404).json({ success: false, message: "Registration not found" });
+        }
+
+        if (registration.userId !== req.user.userId && !req.user.isAdmin) {
+            return res.status(403).json({ success: false, message: "Access denied" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                registrationId: registration.id,
+                paymentStatus: registration.paymentStatus,
+                paymentVerificationRequestedAt: registration.paymentVerificationRequestedAt,
+                paymentVerifiedAt: registration.paymentVerifiedAt,
+                scrim: registration.scrim,
+                slot: registration.slot,
+            },
+        });
+    } catch (error) {
+        console.error("Get Payment Status Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch payment status",
+        });
+    }
+};
+
