@@ -33,7 +33,6 @@ export const getAllScrims = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch scrims",
-            error: error?.message || String(error),
         });
     }
 };
@@ -62,7 +61,6 @@ export const getScrimById = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch scrim",
-            error: error?.message || String(error),
         });
     }
 };

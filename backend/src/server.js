@@ -10,7 +10,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
 import matchRoutes from "./routes/matchRoutes.js";
-
+import { ensureDatabaseSchema } from "./config/ensureSchema.js";
 
 const app = express();
 
@@ -70,6 +70,8 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
+await ensureDatabaseSchema();
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
