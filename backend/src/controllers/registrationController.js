@@ -342,15 +342,6 @@ export const getRegistrationsBySlot = async (req, res) => {
         });
     }
 };
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch registrations",
-        });
-    }
-};
 
 export const removeRegistration = async (req, res) => {
     try {
