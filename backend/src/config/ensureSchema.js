@@ -2,6 +2,20 @@ import prisma from "./prisma.js";
 
 export async function ensureDatabaseSchema() {
     try {
+        // Existing deployments may have schema changes applied by this updater
+        // without matching records in Prisma's migration history. Add the new
+        // tournament mode directly and only when it is absent.
+        const modeColumns = await prisma.$queryRawUnsafe(
+            "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Scrim' AND COLUMN_NAME = 'mode'"
+        );
+        if (modeColumns?.length && !modeColumns[0].COLUMN_TYPE.includes("'SPECIAL'")) {
+            console.log("Adding SPECIAL to Scrim mode...");
+            await prisma.$executeRawUnsafe(
+                "ALTER TABLE `Scrim` MODIFY `mode` ENUM('BR', 'CS', 'SPECIAL') NOT NULL;"
+            );
+            console.log("✅ SPECIAL tournament mode added.");
+        }
+
         // 1. Check Slot table columns
         const slotCols = await prisma.$queryRawUnsafe(
             "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Slot' AND COLUMN_NAME = 'customTime'"
