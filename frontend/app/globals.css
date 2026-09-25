@@ -4,6 +4,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes search-progress-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.search-progress {
+  transform-origin: left;
+  animation: search-progress-fill 2s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-progress { animation: none; }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
-import { Menu, Search, User, LogOut, Sun, Moon } from "lucide-react";
+import { Menu, Search, User, LogOut, Sun, Moon, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -15,17 +15,58 @@ const TICKER = [
   "CHECK YOUR MATCH CARD FOR UPDATES",
 ];
 
-export default function Navbar() {
+export default function Navbar({ initialQuery = "" }: { initialQuery?: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
+  useEffect(() => {
+    if (!searchTimer.current) setSearchQuery(initialQuery);
+  }, [initialQuery]);
+
+  useEffect(() => () => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
+
+  const navigateToSearch = (query: string) => {
+    const destination = `/platform${query ? `?q=${encodeURIComponent(query)}` : ""}#scrims`;
+    if (window.location.pathname === "/platform") {
+      router.replace(destination, { scroll: false });
+    } else {
+      router.push(destination);
+    }
+  };
+
+  const updateSearch = (value: string) => {
+    setSearchQuery(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = null;
+
+    if (!value.trim()) {
+      setSearching(false);
+      if (window.location.pathname === "/platform") navigateToSearch("");
+      return;
+    }
+
+    setSearching(true);
+    searchTimer.current = setTimeout(() => {
+      searchTimer.current = null;
+      setSearching(false);
+      navigateToSearch(value.trim());
+    }, 2000);
+  };
+
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const query = String(new FormData(event.currentTarget).get("q") || "").trim();
-    router.push(`/platform${query ? `?q=${encodeURIComponent(query)}` : ""}#scrims`);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = null;
+    setSearching(false);
+    navigateToSearch(searchQuery.trim());
   };
 
   const handleBrowseClick = () => {
@@ -71,14 +112,22 @@ export default function Navbar() {
           </div>
 
           <div className="hidden w-full max-w-xl px-10 lg:block">
-            <form onSubmit={handleSearch} role="search" className="flex items-center border border-border bg-panel px-4 py-2.5 transition focus-within:border-cyan">
+            <form onSubmit={handleSearch} role="search" className="relative flex items-center border border-border bg-panel px-4 py-2.5 transition focus-within:border-cyan">
               <Search size={16} className="text-muted-foreground" />
               <input
                 placeholder="Search tournaments..."
                 aria-label="Search tournaments"
                 name="q"
+                value={searchQuery}
+                onChange={(event) => updateSearch(event.target.value)}
                 className="ml-3 w-full bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
+              {searchQuery && (
+                <button type="button" onClick={() => updateSearch("")} aria-label="Clear search" className="ml-2 text-muted-foreground transition hover:text-cyan">
+                  <X size={16} />
+                </button>
+              )}
+              {searching && <span key={searchQuery} className="search-progress absolute inset-x-0 bottom-0 h-0.5 bg-cyan" aria-hidden="true" />}
             </form>
           </div>
 
@@ -147,13 +196,23 @@ export default function Navbar() {
 
         {mobileSearchOpen && (
           <form onSubmit={handleSearch} role="search" className="border-t border-border px-3 py-2 lg:hidden">
-            <input
-              name="q"
-              aria-label="Search tournaments"
-              placeholder="Search tournaments..."
-              autoFocus
-              className="w-full border border-border bg-panel-2 px-3 py-2 font-mono text-sm text-foreground outline-none focus:border-cyan"
-            />
+            <div className="relative flex items-center border border-border bg-panel-2 focus-within:border-cyan">
+              <input
+                name="q"
+                aria-label="Search tournaments"
+                placeholder="Search tournaments..."
+                value={searchQuery}
+                onChange={(event) => updateSearch(event.target.value)}
+                autoFocus
+                className="w-full bg-transparent px-3 py-2 font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+              {searchQuery && (
+                <button type="button" onClick={() => updateSearch("")} aria-label="Clear search" className="px-3 text-muted-foreground transition hover:text-cyan">
+                  <X size={16} />
+                </button>
+              )}
+              {searching && <span key={searchQuery} className="search-progress absolute inset-x-0 bottom-0 h-0.5 bg-cyan" aria-hidden="true" />}
+            </div>
           </form>
         )}
 
