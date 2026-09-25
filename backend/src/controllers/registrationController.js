@@ -1,4 +1,6 @@
 import prisma from "../config/prisma.js";
+import { isScrimDatePast } from "../utils/scrimAvailability.js";
+import { publicSlot } from "../utils/publicSlot.js";
 
 export const registerTeam = async (req, res) => {
     try {
@@ -8,6 +10,16 @@ export const registerTeam = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "slotId is required",
+            });
+        }
+
+        const cleanTeamName = typeof teamName === "string" ? teamName.trim() : "";
+        const cleanIglName = typeof iglName === "string" ? iglName.trim() : "";
+        const cleanPhone = typeof phone === "string" ? phone.trim() : "";
+        if (!cleanTeamName || !cleanIglName || !/^[0-9]{10}$/.test(cleanPhone)) {
+            return res.status(400).json({
+                success: false,
+                message: "Enter a team name, IGL name and a 10-digit phone number.",
             });
         }
 
@@ -23,10 +35,10 @@ export const registerTeam = async (req, res) => {
             });
         }
 
-        if (slot.status !== "OPEN" || slot.scrim.status !== "OPEN") {
+        if (slot.status !== "OPEN" || slot.scrim.status !== "OPEN" || isScrimDatePast(slot.scrim.date)) {
             return res.status(400).json({
                 success: false,
-                message: "This time slot is not open for registration",
+                message: "This time slot is closed or the tournament date has passed.",
             });
         }
 
@@ -56,6 +68,30 @@ export const registerTeam = async (req, res) => {
         });
 
         if (existingForUser) {
+            if (existingForUser.paymentStatus === "PENDING") {
+                return res.status(200).json({
+                    success: true,
+                    existing: true,
+                    message: "You already have a pending registration for this slot.",
+                    data: existingForUser,
+                });
+            }
+            if (existingForUser.paymentStatus === "FAILED") {
+                const retried = await prisma.registration.update({
+                    where: { id: existingForUser.id },
+                    data: {
+                        teamName: cleanTeamName,
+                        iglName: cleanIglName,
+                        phone: cleanPhone,
+                        paymentStatus: "PENDING",
+                        paymentVerificationRequestedAt: null,
+                        paymentVerifiedAt: null,
+                        verifiedByAdminId: null,
+                        rejectionReason: null,
+                    },
+                });
+                return res.status(200).json({ success: true, retry: true, data: retried });
+            }
             return res.status(400).json({
                 success: false,
                 message: "You are already registered for this slot.",
@@ -65,7 +101,7 @@ export const registerTeam = async (req, res) => {
         const existingTeam = await prisma.registration.findFirst({
             where: {
                 slotId: Number(slotId),
-                teamName,
+                teamName: cleanTeamName,
                 paymentStatus: "PAID",
             },
         });
@@ -88,9 +124,9 @@ export const registerTeam = async (req, res) => {
         const registration = await prisma.registration.create({
             data: {
                 registrationCode,
-                teamName,
-                iglName,
-                phone,
+                teamName: cleanTeamName,
+                iglName: cleanIglName,
+                phone: cleanPhone,
                 slotNumber,
                 scrimId: slot.scrim.id,
                 slotId: Number(slotId),
@@ -105,7 +141,7 @@ export const registerTeam = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            data: registration,
+            data: { ...registration, slot: publicSlot(registration.slot) },
         });
     } catch (error) {
         console.error(error);
@@ -157,7 +193,7 @@ export const getRegistrationById = async (req, res) => {
 
         res.json({
             success: true,
-            data: registration,
+            data: { ...registration, slot: publicSlot(registration.slot, registration.paymentStatus === "PAID") },
         });
     } catch (error) {
         console.error(error);
@@ -196,25 +232,18 @@ export const getRegistrationDetails = async (req, res) => {
             });
         }
 
-        const isVerified = registration.paymentStatus === "PAID" || registration.scrim.fee === 0;
+        const isVerified = registration.paymentStatus === "PAID";
+        const safeSlot = publicSlot(registration.slot, isVerified);
+        const safeRegistration = { ...registration, slot: safeSlot };
 
         // If payment is pending/not verified, return limited registration info and hide room details
         if (!isVerified) {
             return res.status(200).json({
                 success: true,
                 data: {
-                    registration,
+                    registration: safeRegistration,
                     scrim: registration.scrim,
-                    slot: {
-                        id: registration.slot.id,
-                        time: registration.slot.time,
-                        customTime: registration.slot.customTime,
-                        status: registration.slot.status,
-                        maxTeams: registration.slot.maxTeams,
-                        roomReleased: false,
-                        roomId: null,
-                        roomPassword: null,
-                    },
+                    slot: safeSlot,
                     teams: [],
                     totalTeams: 0,
                     remainingSlots: 0,
@@ -244,13 +273,9 @@ export const getRegistrationDetails = async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                registration,
+                registration: safeRegistration,
                 scrim: registration.scrim,
-                slot: {
-                    ...registration.slot,
-                    roomId: registration.slot.roomReleased ? registration.slot.roomId : null,
-                    roomPassword: registration.slot.roomReleased ? registration.slot.roomPassword : null,
-                },
+                slot: safeSlot,
                 teams,
                 totalTeams: teams.length,
                 remainingSlots: Math.max(0, effectiveMaxTeams - teams.length),
@@ -273,7 +298,7 @@ export const getMyRegistrations = async (req, res) => {
         const registrations = await prisma.registration.findMany({
             where: {
                 userId: req.user.userId,
-                paymentStatus: { in: ["PAID", "PENDING"] },
+                paymentStatus: { in: ["PAID", "PENDING", "FAILED"] },
             },
             include: { scrim: true, slot: true },
             orderBy: { createdAt: "desc" },
@@ -304,7 +329,10 @@ export const getMyRegistrations = async (req, res) => {
 
         res.json({
             success: true,
-            data: deduplicated,
+            data: deduplicated.map((registration) => ({
+                ...registration,
+                slot: publicSlot(registration.slot, registration.paymentStatus === "PAID"),
+            })),
         });
     } catch (error) {
         console.error(error);

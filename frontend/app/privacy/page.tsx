@@ -38,7 +38,7 @@ export default function PrivacyPage() {
               <li><strong>Personal Information:</strong> We process information like username, email, phone number, and in-game details when you voluntarily register on our platform.</li>
               <li><strong>Sensitive Data:</strong> We do not process sensitive personal information.</li>
               <li><strong>Third Parties:</strong> Information is only shared for necessary operational, security, legal, or transaction fulfillment reasons.</li>
-              <li><strong>Contact:</strong> For questions or exercising your data rights, contact us at <a href="mailto:support@a4esports.in" className="text-cyan underline">support@a4esports.in</a>.</li>
+              <li><strong>Contact:</strong> For questions or exercising your data rights, contact us at <a href="mailto:a4esportsindia@gmail.com" className="text-cyan underline">a4esportsindia@gmail.com</a>.</li>
             </ul>
           </section>
 
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
             </p>
             <div className="border border-border bg-panel-2 p-4 font-mono text-sm text-foreground">
               <p className="font-bold">A4 ESPORTS Support</p>
-              <p className="text-cyan">Email: support@a4esports.in</p>
+              <p className="text-cyan">Email: a4esportsindia@gmail.com</p>
             </div>
           </section>
         </div>

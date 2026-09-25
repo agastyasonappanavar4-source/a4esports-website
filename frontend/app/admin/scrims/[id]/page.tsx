@@ -21,10 +21,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
-import { getScrimById, type Scrim, type Slot } from "@/lib/scrims";
+import { type Scrim, type Slot } from "@/lib/scrims";
 import { slotTimeLabel } from "@/lib/slotTime";
 import {
   updateScrimRequest,
+  getAdminScrimByIdRequest,
   updateSlotRequest,
   updateSlotStatusRequest,
   releaseSlotRoomRequest,
@@ -106,7 +107,7 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
   }, [authLoading, user, router]);
 
   const loadScrim = () => {
-    getScrimById(scrimId).then((data) => {
+    getAdminScrimByIdRequest(scrimId).then((data) => {
       setScrim(data);
       if (data && data.slots?.length > 0) {
         if (!selectedSlotId) {
@@ -174,6 +175,8 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => {
     if (selectedSlotId) {
+      // Show a loader while the selected slot's teams are fetched.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadSlotTeams(selectedSlotId);
       if (activeTab === "results") {
         loadMatches(selectedSlotId);
@@ -441,7 +444,7 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
     ]);
   };
 
-  const handleUpdateResultRow = (index: number, field: string, value: any) => {
+  const handleUpdateResultRow = (index: number, field: keyof (typeof editableResults)[number], value: string) => {
     setEditableResults((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: Number(value) || 0 };
@@ -569,7 +572,7 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`px-4 sm:px-6 py-3 font-display text-sm font-bold uppercase tracking-wider transition whitespace-nowrap relative ${
                 activeTab === tab.id
                   ? "text-cyan after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-cyan"
@@ -1359,7 +1362,7 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
                 <label className="block text-[10px] uppercase text-muted-foreground mb-1">Payment Status</label>
                 <select
                   value={newPaymentStatus}
-                  onChange={(e) => setNewPaymentStatus(e.target.value as any)}
+                  onChange={(e) => setNewPaymentStatus(e.target.value as "PAID" | "PENDING")}
                   className="w-full border border-border bg-panel-2 p-2.5 text-foreground outline-none focus:border-cyan"
                 >
                   <option value="PAID">PAID</option>

@@ -32,8 +32,8 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (username: string, email: string, password: string) => Promise<void>;
-  googleLogin: (payload: { email: string; name?: string; googleId?: string; avatar?: string }) => Promise<any>;
-  updateProfile: (data: Record<string, any>) => Promise<void>;
+  googleLogin: (credential: string) => Promise<AuthUser | null>;
+  updateProfile: (data: Record<string, unknown>) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const formatUser = (u: any): AuthUser | null => {
+  const formatUser = (u: AuthUser | null | undefined): AuthUser | null => {
     if (!u) return null;
     return {
       ...u,
@@ -56,9 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await getMe();
       setUser(formatUser(data.user));
-    } catch (err: any) {
+    } catch (err: unknown) {
       setUser(null);
-      if (err.status === 401) {
+      if (err instanceof Error && "status" in err && err.status === 401) {
         localStorage.removeItem("token");
       }
     } finally {
@@ -67,52 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Global fetch interceptor to attach Authorization header if token exists in localStorage
-    if (typeof window !== "undefined") {
-      const originalFetch = window.fetch;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-
-      // @ts-ignore
-      if (!window.fetch.__intercepted) {
-        const customFetch = async function (input: RequestInfo | URL, init?: RequestInit) {
-          let url = "";
-          if (typeof input === "string") {
-            url = input;
-          } else if (input instanceof URL) {
-            url = input.toString();
-          } else {
-            url = input.url;
-          }
-
-          const token = localStorage.getItem("token");
-          if (token && (url.startsWith(apiUrl) || url.startsWith("/api") || !url.startsWith("http"))) {
-            init = init || {};
-            init.headers = init.headers || {};
-            if (init.headers instanceof Headers) {
-              if (!init.headers.has("Authorization")) {
-                init.headers.set("Authorization", `Bearer ${token}`);
-              }
-            } else if (Array.isArray(init.headers)) {
-              if (!init.headers.some(([key]) => key.toLowerCase() === "authorization")) {
-                init.headers.push(["Authorization", `Bearer ${token}`]);
-              }
-            } else {
-              if (!init.headers["Authorization"] && !init.headers["authorization"]) {
-                // @ts-ignore
-                init.headers["Authorization"] = `Bearer ${token}`;
-              }
-            }
-          }
-          return originalFetch(input, init);
-        };
-
-        // @ts-ignore
-        customFetch.__intercepted = true;
-        window.fetch = customFetch;
-      }
-    }
-
-    refreshUser();
+    // Service requests add their own Authorization header. Do not intercept
+    // global fetch, which could send a token to an unrelated origin.
+    // The first account lookup resolves asynchronously and hydrates auth state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshUser();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -128,8 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signupRequest(username, email, password);
   };
 
-  const googleLogin = async (payload: { email: string; name?: string; googleId?: string; avatar?: string }) => {
-    const data = await googleLoginRequest(payload);
+  const googleLogin = async (credential: string) => {
+    const data = await googleLoginRequest(credential);
     if (data.token) {
       localStorage.setItem("token", data.token);
     }
@@ -138,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return formatted;
   };
 
-  const updateProfile = async (data: Record<string, any>) => {
+  const updateProfile = async (data: Record<string, unknown>) => {
     const res = await updateProfileRequest(data);
     if (res.user) {
       setUser(formatUser(res.user));

@@ -17,15 +17,10 @@ import { slotTimeLabel } from "@/lib/slotTime";
 
 export default function RegisteredBanner() {
   const { user } = useAuth();
-  const [registrations, setRegistrations] = useState<MyRegistration[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [result, setResult] = useState<{ userId: number; registrations: MyRegistration[] } | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      setRegistrations([]);
-      setLoading(false);
-      return;
-    }
+    if (!user) return;
 
     getMyRegistrations()
       .then((regs) => {
@@ -51,14 +46,14 @@ export default function RegisteredBanner() {
             }
           }
         }
-        setRegistrations(Array.from(deduplicatedMap.values()));
+        setResult({ userId: user.id, registrations: Array.from(deduplicatedMap.values()) });
       })
-      .catch(() => setRegistrations([]))
-      .finally(() => setLoading(false));
+      .catch(() => setResult({ userId: user.id, registrations: [] }));
   }, [user]);
 
+  const registrations = result && user && result.userId === user.id ? result.registrations : [];
   // Only visible when user is authenticated AND has registrations
-  if (!user || loading || registrations.length === 0) {
+  if (!user || registrations.length === 0) {
     return null;
   }
 
@@ -82,6 +77,9 @@ export default function RegisteredBanner() {
         {registrations.map((reg) => {
           const isFree = reg.scrim.fee === 0;
           const isPending = !isFree && reg.paymentStatus === "PENDING";
+          const isRejected = reg.paymentStatus === "FAILED";
+          const needsAttention = isPending || isRejected;
+          const reviewRequested = Boolean(reg.paymentVerificationRequestedAt);
           const timing = slotTimeLabel(reg.slot);
           const formattedDate = new Date(reg.scrim.date).toLocaleDateString("en-IN", {
             day: "numeric",
@@ -94,15 +92,17 @@ export default function RegisteredBanner() {
           // FREE: "REGISTRATION CONFIRMED" (no payment status shown for free scrims)
           const statusText = isFree
             ? "REGISTRATION CONFIRMED"
+            : isRejected
+            ? "PAYMENT REVIEW REJECTED"
             : isPending
-            ? "PAYMENT BEING VERIFIED"
+            ? reviewRequested ? "PAYMENT BEING VERIFIED" : "PAYMENT NOT SUBMITTED"
             : "PAYMENT CONFIRMED";
 
           return (
             <div
               key={reg.id}
               className={`w-[86vw] max-w-[340px] sm:w-auto shrink-0 snap-start flex flex-col justify-between rounded-xl border p-4 sm:p-5 transition-all duration-200 ${
-                isPending
+                needsAttention
                   ? "border-amber/50 bg-gradient-to-b from-[#1a1712] to-[#12151b] hover:border-amber/80 shadow-[0_4px_24px_rgba(255,194,75,0.09)]"
                   : "border-cyan/50 bg-gradient-to-b from-[#0f1d24] to-[#12151b] hover:border-cyan/80 shadow-[0_4px_24px_rgba(47,230,214,0.09)]"
               }`}
@@ -112,12 +112,12 @@ export default function RegisteredBanner() {
                 <div className="flex items-center justify-between gap-2">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase ${
-                      isPending
+                      needsAttention
                         ? "border border-amber/60 bg-amber/15 text-amber animate-pulse"
                         : "border border-cyan/60 bg-cyan/15 text-cyan"
                     }`}
                   >
-                    {isPending ? (
+                    {needsAttention ? (
                       <Hourglass size={11} className="shrink-0" />
                     ) : (
                       <CheckCircle2 size={11} className="shrink-0" />
@@ -171,14 +171,14 @@ export default function RegisteredBanner() {
               {/* Action Button: VIEW MORE */}
               <div className="mt-4 pt-1">
                 <Link
-                  href={`/my-match/${reg.id}`}
+                  href={isRejected ? `/scrims/${reg.scrim.id}/register?slot=${reg.slot.id}` : isPending && !reviewRequested ? `/payment/${reg.id}` : `/my-match/${reg.id}`}
                   className={`btn-press flex h-10 w-full items-center justify-center gap-2 rounded-lg font-display text-xs font-bold uppercase tracking-wider transition ${
-                    isPending
+                    needsAttention
                       ? "border border-amber/50 bg-amber/15 text-amber hover:bg-amber hover:text-void shadow-[0_0_12px_rgba(255,194,75,0.15)]"
                       : "border border-cyan/50 bg-cyan/15 text-cyan hover:bg-cyan hover:text-void shadow-[0_0_12px_rgba(47,230,214,0.15)]"
                   }`}
                 >
-                  View More
+                  {isRejected ? "Try Registration Again" : isPending && !reviewRequested ? "Continue Payment" : "View More"}
                   <ArrowRight size={14} />
                 </Link>
               </div>

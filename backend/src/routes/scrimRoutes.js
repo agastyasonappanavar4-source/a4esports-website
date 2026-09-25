@@ -2,6 +2,7 @@ import express from "express";
 import {
     getAllScrims,
     getScrimById,
+    getAdminScrimById,
     createScrim,
     updateScrim,
     deleteScrim,
@@ -22,6 +23,7 @@ const router = express.Router();
 
 // Public routes
 router.get("/", getAllScrims);
+router.get("/:id/admin", verifyToken, verifyAdmin, getAdminScrimById);
 router.get("/:id", getScrimById);
 
 // Admin routes - scrim (lobby)

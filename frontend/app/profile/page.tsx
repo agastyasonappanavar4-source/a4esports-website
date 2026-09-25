@@ -36,15 +36,19 @@ export default function ProfilePage() {
     if (!loading && !user) {
       router.push("/login?next=/profile");
     }
-    if (user) {
+    if (user) getMyRegistrations().then(setRegistrations).catch(() => setRegistrations([]));
+  }, [loading, user, router]);
+
+  const toggleEditing = () => {
+    if (!editing && user) {
       setUsername(user.username || "");
       setInGameName(user.inGameName || "");
       setUid(user.uid || "");
       setPhone(user.phone || "");
       setAvatar(user.avatar || "🔥");
-      getMyRegistrations().then(setRegistrations).catch(() => setRegistrations([]));
     }
-  }, [loading, user, router]);
+    setEditing((current) => !current);
+  };
 
   const handleSaveProfile = async () => {
     setUpdating(true);
@@ -95,7 +99,7 @@ export default function ProfilePage() {
           </Link>
 
           <button
-            onClick={() => setEditing(!editing)}
+            onClick={toggleEditing}
             className="flex items-center gap-2 border border-cyan/40 bg-cyan/10 px-4 py-2 font-mono text-xs sm:text-sm font-semibold uppercase text-cyan transition hover:bg-cyan/20"
           >
             <Edit3 size={16} />

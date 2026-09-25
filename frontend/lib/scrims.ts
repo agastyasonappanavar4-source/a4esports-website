@@ -25,6 +25,7 @@ export interface Scrim {
   prizePool?: string;
   rules: string;
   status: string;
+  registrationOpen?: boolean;
   slots: Slot[];
   _count?: { registrations: number };
 }

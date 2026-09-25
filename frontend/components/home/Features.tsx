@@ -10,18 +10,18 @@ export default function Features() {
     },
     {
       icon: Clock,
-      title: "Instant Room Details",
-      description: "Automated Room ID & Password released 15 mins prior",
+      title: "Room Details",
+      description: "Admins release lobby credentials to confirmed teams near match time",
     },
     {
       icon: Trophy,
-      title: "Guaranteed Payouts",
-      description: "Direct reward distributions within 24 hours of match end",
+      title: "Prize Support",
+      description: "Tournament results and reward details are managed by the organizers",
     },
     {
       icon: Zap,
       title: "Seamless Registration",
-      description: "1-click slot reservation with instant team confirmation",
+      description: "Choose a time slot and track manual payment confirmation in your account",
     },
   ];
 

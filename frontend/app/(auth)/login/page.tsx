@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Home, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +9,12 @@ import { useToast } from "@/context/ToastContext";
 
 declare global {
   interface Window {
-    google?: any;
+    google?: {
+      accounts: { id: {
+        initialize: (options: { client_id: string; callback: (response: { credential?: string }) => void }) => void;
+        renderButton: (container: HTMLElement, options: { theme: string; size: string; width: number; text: string; shape: string }) => void;
+      } };
+    };
   }
 }
 
@@ -25,44 +30,25 @@ export default function LoginPage() {
   const [chosenUsername, setChosenUsername] = useState("");
   const [usernameLoading, setUsernameLoading] = useState(false);
 
-  const handleCredentialResponse = async (response: any) => {
-    const token = response.credential;
-    if (!token) return;
+  const handleCredentialResponse = useCallback(async (response: { credential?: string }) => {
+    const credential = response.credential;
+    if (!credential) return;
 
     setLoading(true);
     try {
-      // Decode JWT token safely
-      const base64Url = token.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        window.atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
-      );
-      const payload = JSON.parse(jsonPayload);
-
-      const { email, name, sub: googleId, picture: avatar } = payload;
-
-      const loggedUser = await googleLogin({
-        email,
-        name: name || email.split("@")[0],
-        googleId,
-        avatar,
-      });
+      const loggedUser = await googleLogin(credential);
 
       showToast("Signed in with Google successfully!", "success");
-      setChosenUsername(loggedUser.username || email.split("@")[0]);
+      setChosenUsername(loggedUser?.username || "");
       setUsernameModalOpen(true);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Google login failed", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [googleLogin, showToast]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     let currentWidth = 0;
 
     const renderButton = () => {
@@ -96,8 +82,8 @@ export default function LoginPage() {
       }
     };
 
+    const interval = setInterval(initGsi, 100);
     initGsi();
-    interval = setInterval(initGsi, 100);
 
     const handleResize = () => {
       renderButton();
@@ -108,7 +94,7 @@ export default function LoginPage() {
       clearInterval(interval);
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [handleCredentialResponse]);
 
   const handleSaveUsername = async () => {
     if (!chosenUsername.trim()) {
@@ -195,13 +181,16 @@ export default function LoginPage() {
 
           <button
             onClick={() => {
-              showToast("Entering as Guest...", "info");
+              showToast("Browsing as guest. Google sign-in is required to register.", "info");
               router.push("/platform");
             }}
             className="btn-press w-full border border-border bg-panel-2 py-3.5 font-display text-base sm:text-lg font-bold uppercase text-foreground transition hover:border-cyan hover:text-cyan"
           >
-            Continue as Guest
+            Browse as Guest
           </button>
+          <p className="text-center font-mono text-xs text-muted-foreground">
+            You can browse tournaments as a guest. Sign in with Google to register.
+          </p>
         </div>
       </div>
 

@@ -1,6 +1,10 @@
 import prisma from "../config/prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client();
 
 // SIGNUP
 export const signup = async (req, res) => {
@@ -191,14 +195,38 @@ export const getCurrentUser = async (req, res) => {
 // GOOGLE LOGIN / SIGNUP
 export const googleLogin = async (req, res) => {
     try {
-        const { email, name, googleId, avatar } = req.body;
+        const { credential } = req.body;
 
-        if (!email) {
+        if (!credential || typeof credential !== "string") {
             return res.status(400).json({
                 success: false,
-                message: "Google account email is required.",
+                message: "Google ID token is required.",
             });
         }
+
+        if (!process.env.GOOGLE_CLIENT_ID) {
+            return res.status(503).json({
+                success: false,
+                message: "Google sign-in is not configured.",
+            });
+        }
+
+        let payload;
+        try {
+            const ticket = await googleClient.verifyIdToken({
+                idToken: credential,
+                audience: process.env.GOOGLE_CLIENT_ID,
+            });
+            payload = ticket.getPayload();
+        } catch {
+            return res.status(401).json({ success: false, message: "Invalid Google sign-in token." });
+        }
+
+        if (!payload?.email || !payload.email_verified || !payload.sub) {
+            return res.status(401).json({ success: false, message: "Google email is not verified." });
+        }
+
+        const { email, name, sub: googleId, picture: avatar } = payload;
 
         const normalizedEmail = email.trim().toLowerCase();
 
@@ -215,18 +243,20 @@ export const googleLogin = async (req, res) => {
                 username = `${username}_${Math.floor(1000 + Math.random() * 9000)}`;
             }
 
-            const dummyPassword = await bcrypt.hash(Math.random().toString(36), 10);
+            const dummyPassword = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
 
             user = await prisma.user.create({
                 data: {
                     username,
                     email: normalizedEmail,
                     password: dummyPassword,
-                    googleId: googleId || null,
+                    googleId,
                     avatar: avatar || null,
                 },
             });
-        } else if (googleId && !user.googleId) {
+        } else if (user.googleId && user.googleId !== googleId) {
+            return res.status(403).json({ success: false, message: "This account is linked to another Google identity. Contact support." });
+        } else if (!user.googleId) {
             user = await prisma.user.update({
                 where: { id: user.id },
                 data: { googleId, avatar: avatar || user.avatar },
@@ -274,108 +304,21 @@ export const googleLogin = async (req, res) => {
     }
 };
 
-// FORGOT PASSWORD
-export const forgotPassword = async (req, res) => {
-    try {
-        const { email } = req.body;
-
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: "Email is required.",
-            });
-        }
-
-        const normalizedEmail = email.trim().toLowerCase();
-
-        const user = await prisma.user.findUnique({
-            where: { email: normalizedEmail },
-        });
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "No account found with this email.",
-            });
-        }
-
-        // Generate 6-digit reset code
-        const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-        const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { resetToken, resetTokenExpiry },
-        });
-
-        res.json({
-            success: true,
-            message: "Password reset code generated.",
-            resetToken, // Returned so user can reset easily on frontend
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: "Internal Server Error",
-        });
-    }
+// Password recovery is disabled until a private delivery channel is configured.
+// The previous implementation returned reset codes in the API response and
+// accepted a missing code, which allowed account takeover.
+export const forgotPassword = async (_req, res) => {
+    return res.status(503).json({
+        success: false,
+        message: "Password recovery is temporarily unavailable. Please contact support.",
+    });
 };
 
-// RESET PASSWORD
-export const resetPassword = async (req, res) => {
-    try {
-        const { email, resetToken, newPassword } = req.body;
-
-        if (!email || !newPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "Email and new password are required.",
-            });
-        }
-
-        const normalizedEmail = email.trim().toLowerCase();
-
-        const user = await prisma.user.findUnique({
-            where: { email: normalizedEmail },
-        });
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "Account not found.",
-            });
-        }
-
-        if (resetToken && user.resetToken !== resetToken) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid reset code.",
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                password: hashedPassword,
-                resetToken: null,
-                resetTokenExpiry: null,
-            },
-        });
-
-        res.json({
-            success: true,
-            message: "Password reset successfully. You can now login.",
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to reset password.",
-        });
-    }
+export const resetPassword = async (_req, res) => {
+    return res.status(503).json({
+        success: false,
+        message: "Password recovery is temporarily unavailable. Please contact support.",
+    });
 };
 
 // UPDATE PROFILE

@@ -16,8 +16,8 @@ export function combineDateTime(date: string, time: string): Date {
   return d;
 }
 
-export function getCountdown(target: Date): string {
-  const diff = target.getTime() - Date.now();
+export function getCountdown(target: Date, now = Date.now()): string {
+  const diff = target.getTime() - now;
 
   if (diff <= 0) return "Started";
 

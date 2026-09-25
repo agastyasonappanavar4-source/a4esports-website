@@ -14,8 +14,7 @@ function getAuthHeaders(customHeaders: Record<string, string> = {}) {
 async function handle(response: Response) {
   const data = await response.json();
   if (!response.ok) {
-    const error = new Error(data.message || "Something went wrong");
-    // @ts-ignore
+    const error = new Error(data.message || "Something went wrong") as Error & { status: number };
     error.status = response.status;
     throw error;
   }
@@ -46,17 +45,12 @@ export async function signupRequest(
   return handle(response);
 }
 
-export async function googleLoginRequest(payload: {
-  email: string;
-  name?: string;
-  googleId?: string;
-  avatar?: string;
-}) {
+export async function googleLoginRequest(credential: string) {
   const response = await fetch(`${API_URL}/api/auth/google`, {
     method: "POST",
     credentials: "include",
     headers: getAuthHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ credential }),
   });
   return handle(response);
 }
@@ -85,7 +79,7 @@ export async function resetPasswordRequest(
   return handle(response);
 }
 
-export async function updateProfileRequest(data: Record<string, any>) {
+export async function updateProfileRequest(data: Record<string, unknown>) {
   const response = await fetch(`${API_URL}/api/auth/profile`, {
     method: "PUT",
     credentials: "include",

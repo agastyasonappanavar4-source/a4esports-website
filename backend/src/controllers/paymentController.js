@@ -1,6 +1,8 @@
 import razorpay from "../config/razorpay.js";
 import prisma from "../config/prisma.js";
 import crypto from "crypto";
+import { publicSlot } from "../utils/publicSlot.js";
+import { isScrimDatePast } from "../utils/scrimAvailability.js";
 
 // Create Razorpay Order
 export const createOrder = async (req, res) => {
@@ -16,7 +18,7 @@ export const createOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: "Registration not found" });
     }
 
-    if (registration.paymentStatus !== "PENDING" || registration.scrim.fee <= 0) {
+    if (registration.paymentStatus !== "PENDING" || registration.scrim.fee <= 0 || isScrimDatePast(registration.scrim.date)) {
       return res.status(400).json({ success: false, message: "This registration does not need payment" });
     }
 
@@ -161,6 +163,22 @@ export const requestPaymentVerification = async (req, res) => {
             return res.status(403).json({ success: false, message: "Access denied" });
         }
 
+        if (registration.paymentStatus !== "PENDING") {
+            return res.status(400).json({ success: false, message: "This registration is not awaiting payment review." });
+        }
+
+        if (registration.paymentVerificationRequestedAt) {
+            return res.json({
+                success: true,
+                message: "Payment review has already been requested.",
+                data: {
+                    id: registration.id,
+                    paymentStatus: registration.paymentStatus,
+                    paymentVerificationRequestedAt: registration.paymentVerificationRequestedAt,
+                },
+            });
+        }
+
         // Idempotent: record verification request timestamp without altering PENDING status
         const updated = await prisma.registration.update({
             where: { id: Number(registrationId) },
@@ -172,7 +190,11 @@ export const requestPaymentVerification = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Payment verification requested. Status is pending admin confirmation.",
-            data: updated,
+            data: {
+                id: updated.id,
+                paymentStatus: updated.paymentStatus,
+                paymentVerificationRequestedAt: updated.paymentVerificationRequestedAt,
+            },
         });
     } catch (error) {
         console.error("Request Verification Error:", error);
@@ -208,7 +230,7 @@ export const getPaymentStatus = async (req, res) => {
                 paymentVerificationRequestedAt: registration.paymentVerificationRequestedAt,
                 paymentVerifiedAt: registration.paymentVerifiedAt,
                 scrim: registration.scrim,
-                slot: registration.slot,
+                slot: publicSlot(registration.slot, registration.paymentStatus === "PAID"),
             },
         });
     } catch (error) {
@@ -219,4 +241,3 @@ export const getPaymentStatus = async (req, res) => {
         });
     }
 };
-

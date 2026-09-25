@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import { Trophy, Users, Calendar, IndianRupee, ShieldCheck, Clock } from "lucide-react";
 import BackToHome from "@/components/layout/BackToHome";
 import { getScrimById } from "@/lib/scrims";
+import { canRegisterForScrim } from "@/lib/scrimAvailability";
 import { slotTimeLabel } from "@/lib/slotTime";
 import { CornerFrame } from "@/components/ui/CornerFrame";
 
@@ -19,7 +20,8 @@ export default async function TournamentPage({
     notFound();
   }
 
-  const openSlots = scrim.slots.filter((slot) => slot.status === "OPEN");
+  const registrationOpen = canRegisterForScrim(scrim);
+  const openSlots = registrationOpen ? scrim.slots.filter((slot) => slot.status === "OPEN") : [];
 
   const formattedDate = new Date(scrim.date).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -54,7 +56,7 @@ export default async function TournamentPage({
           <div>
             <span className="flex w-fit items-center gap-2 rounded-full border border-cyan/40 bg-cyan/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-cyan backdrop-blur-md">
               <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse-dot" />
-              {scrim.status === "OPEN" ? "Registration Open" : "Closed"}
+              {registrationOpen ? "Registration Open" : "Registration Closed"}
             </span>
             <h1 className="mt-3 font-display text-3xl sm:text-5xl md:text-6xl font-bold uppercase leading-tight text-foreground drop-shadow-md">
               {scrim.title}
@@ -93,8 +95,8 @@ export default async function TournamentPage({
               {rulesList.length > 0 ? (
                 <ul className="space-y-3 font-mono text-sm text-muted-foreground">
                   {rulesList.map((rule, i) => (
-                    <li key={i}>
-                      {rule}
+                    <li key={i} className="flex gap-2">
+                      <span className="text-cyan" aria-hidden="true">✓</span>{rule}
                     </li>
                   ))}
                 </ul>
@@ -151,7 +153,7 @@ export default async function TournamentPage({
                 </div>
               ) : openSlots.length === 0 ? (
                 <p className="font-mono text-sm text-muted-foreground">
-                  No time slots are open right now. Check back soon.
+                  {registrationOpen ? "No time slots are open right now. Check back soon." : "Registration has closed for this tournament date."}
                 </p>
               ) : (
                 <div className="space-y-3">

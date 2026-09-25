@@ -1,4 +1,24 @@
 import prisma from "../config/prisma.js";
+import { isScrimDatePast } from "../utils/scrimAvailability.js";
+
+const publicSlotInclude = {
+    slots: {
+        select: {
+            id: true,
+            time: true,
+            customTime: true,
+            status: true,
+            maxTeams: true,
+            scrimId: true,
+            _count: {
+                select: {
+                    registrations: { where: { paymentStatus: "PAID" } },
+                },
+            },
+        },
+        orderBy: { time: "asc" },
+    },
+};
 
 const slotInclude = {
     slots: {
@@ -22,11 +42,17 @@ export const getAllScrims = async (req, res) => {
             orderBy: { createdAt: "desc" },
             include: {
                 _count: { select: { registrations: true } },
-                ...slotInclude,
+                ...publicSlotInclude,
             },
         });
 
-        res.status(200).json({ success: true, data: scrims });
+        res.status(200).json({
+            success: true,
+            data: scrims.map((scrim) => ({
+                ...scrim,
+                registrationOpen: scrim.status === "OPEN" && !isScrimDatePast(scrim.date),
+            })),
+        });
     } catch (error) {
         console.error(error);
 
@@ -44,7 +70,7 @@ export const getScrimById = async (req, res) => {
 
         const scrim = await prisma.scrim.findUnique({
             where: { id: Number(id) },
-            include: slotInclude,
+            include: publicSlotInclude,
         });
 
         if (!scrim) {
@@ -54,7 +80,13 @@ export const getScrimById = async (req, res) => {
             });
         }
 
-        res.status(200).json({ success: true, data: scrim });
+        res.status(200).json({
+            success: true,
+            data: {
+                ...scrim,
+                registrationOpen: scrim.status === "OPEN" && !isScrimDatePast(scrim.date),
+            },
+        });
     } catch (error) {
         console.error(error);
 
@@ -62,6 +94,21 @@ export const getScrimById = async (req, res) => {
             success: false,
             message: "Failed to fetch scrim",
         });
+    }
+};
+
+// Saved room credentials are available only to authenticated admins.
+export const getAdminScrimById = async (req, res) => {
+    try {
+        const scrim = await prisma.scrim.findUnique({
+            where: { id: Number(req.params.id) },
+            include: slotInclude,
+        });
+        if (!scrim) return res.status(404).json({ success: false, message: "Scrim not found" });
+        return res.json({ success: true, data: scrim });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: "Failed to fetch scrim" });
     }
 };
 

@@ -48,11 +48,7 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
   }, [authLoading, user, registrationId, router]);
 
   useEffect(() => {
-    if (!registrationId || isNaN(registrationId)) {
-      setError("Invalid registration ID.");
-      setLoading(false);
-      return;
-    }
+    if (!registrationId || isNaN(registrationId)) return;
 
     getRegistrationDetails(registrationId)
       .then((data) => {
@@ -94,7 +90,7 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
     }).catch(() => {});
   };
 
-  if (loading) {
+  if (loading && Number.isSafeInteger(registrationId) && registrationId > 0) {
     return (
       <main className="min-h-screen bg-background bg-tactical-grid">
         <Navbar />
@@ -126,7 +122,7 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
             <h1 className="font-display text-2xl font-bold uppercase text-foreground">
               Access Restricted
             </h1>
-            <p className="mt-2 font-mono text-sm text-muted-foreground">{error}</p>
+            <p className="mt-2 font-mono text-sm text-muted-foreground">{error || "Invalid registration ID."}</p>
             <button
               onClick={() => router.push("/platform")}
               className="mt-6 border border-border bg-panel-2 px-6 py-2.5 font-mono text-sm text-foreground transition hover:border-cyan hover:text-cyan"
@@ -140,7 +136,9 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const { registration, scrim, slot, teams, totalTeams, remainingSlots, roomReleased } = details;
-  const isPending = registration.paymentStatus === "PENDING";
+  const isRejected = registration.paymentStatus === "FAILED";
+  const isPending = registration.paymentStatus !== "PAID";
+  const reviewRequested = !isRejected && Boolean(registration.paymentVerificationRequestedAt);
   const timing = slotTimeLabel(slot);
   const effectiveMaxTeams = slot.maxTeams ?? scrim.maxTeams;
 
@@ -190,7 +188,7 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
               {isPending ? (
                 <>
                   <Hourglass size={13} className="animate-spin" />
-                  Payment Being Verified
+                  {isRejected ? "Payment Review Rejected" : reviewRequested ? "Payment Being Verified" : "Payment Not Submitted"}
                 </>
               ) : (
                 <>
@@ -211,9 +209,21 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
 
           <p className="mt-2 font-mono text-xs sm:text-sm text-muted-foreground">
             {isPending
-              ? "Your payment verification request has been received. Admin is manually verifying your payment."
+              ? isRejected
+                ? `Payment could not be verified. ${registration.rejectionReason || "Please contact support or try again."}`
+                : reviewRequested
+                ? "Your payment review request has been received. Admin is manually checking your payment."
+                : "Your registration is pending. Complete the UPI payment and request review to continue."
               : "You are confirmed for this tournament lobby. Check room details below."}
           </p>
+          {isPending && (isRejected || !reviewRequested) && (
+            <button
+              onClick={() => router.push(isRejected ? `/scrims/${scrim.id}/register?slot=${slot.id}` : `/payment/${registration.id}`)}
+              className="mt-4 rounded-lg bg-cyan px-5 py-2.5 font-display text-sm font-bold uppercase text-void"
+            >
+              {isRejected ? "Try Registration Again" : "Continue to Payment"}
+            </button>
+          )}
         </div>
 
         {/* Layout Grid */}
@@ -478,7 +488,7 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex justify-between text-muted-foreground border-t border-border/40 pt-2">
                 <span>Payment</span>
                 <span className={isPending ? "text-amber font-bold" : "text-cyan font-bold"}>
-                  {isPending ? "Verification Pending" : "Confirmed"}
+                  {isRejected ? "Rejected" : isPending ? reviewRequested ? "Verification Pending" : "Payment Not Submitted" : "Confirmed"}
                 </span>
               </div>
             </div>
@@ -503,7 +513,7 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
                 <div className="rounded-lg border border-border bg-panel-2 p-4 font-mono text-xs text-muted-foreground text-center space-y-2">
                   <p className="text-foreground font-semibold">Room Not Released Yet</p>
                   <p className="text-[11px]">
-                    Room ID and Password will be available 15 minutes before the match.
+                    An admin normally releases the Room ID and Password around 15 minutes before the match.
                   </p>
                 </div>
               ) : (

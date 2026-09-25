@@ -63,7 +63,7 @@ export default function TermsPage() {
           <section className="space-y-3 border-t border-border pt-6">
             <h2 className="font-display text-xl font-bold uppercase text-foreground">5. Contact</h2>
             <p className="font-mono text-sm leading-relaxed text-muted-foreground">
-              For any queries regarding legal terms and platform rules, reach out to <a href="mailto:support@a4esports.in" className="text-cyan underline">support@a4esports.in</a>.
+              For any queries regarding legal terms and platform rules, reach out to <a href="mailto:a4esportsindia@gmail.com" className="text-cyan underline">a4esportsindia@gmail.com</a>.
             </p>
           </section>
         </div>

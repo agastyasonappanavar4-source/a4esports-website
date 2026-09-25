@@ -13,6 +13,13 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [registrations, setRegistrations] = useState<MyRegistration[]>([]);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const updateClock = () => setNow(Date.now());
+    const interval = setInterval(updateClock, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -50,7 +57,7 @@ export default function NotificationsPage() {
           <div className="mt-10 space-y-4">
             {registrations.map((reg) => {
               const target = combineDateWithSlot(reg.scrim.date, reg.slot.time);
-              const isPast = target.getTime() < Date.now();
+              const isPast = target.getTime() < now;
 
               return (
                 <div key={reg.id} className="border border-border bg-panel p-6">
@@ -63,15 +70,15 @@ export default function NotificationsPage() {
                         {reg.scrim.title}
                       </h3>
                       <p className="mt-1 font-mono text-sm text-muted-foreground">
-                        Registered · {slotTimeLabel(reg.slot.time)} · #{reg.slotNumber} · Code {reg.registrationCode}
+                        {reg.paymentStatus === "PAID" ? "Payment confirmed" : reg.paymentStatus === "FAILED" ? "Payment review rejected" : reg.paymentVerificationRequestedAt ? "Payment being verified" : "Payment not submitted"} · {slotTimeLabel(reg.slot.time)} · {reg.slotNumber ? `#${reg.slotNumber}` : "Slot pending"} · Code {reg.registrationCode}
                       </p>
                       <p className="mt-1 font-mono text-xs text-muted-foreground">
-                        {isPast ? "Match has started or ended" : `Starts in ${getCountdown(target)}`}
+                        {now && (isPast ? "Match has started or ended" : `Starts in ${getCountdown(target, now)}`)}
                       </p>
                     </div>
                   </div>
 
-                  {reg.slot.roomReleased && (
+                  {reg.paymentStatus === "PAID" && reg.slot.roomReleased && (
                     <div className="mt-4 flex items-center gap-3 border-t border-border pt-4 font-mono text-sm text-cyan">
                       <KeyRound size={16} />
                       Room ID has been released for this match
