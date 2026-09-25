@@ -14,6 +14,7 @@ import {
   Trophy,
   Calendar,
   Users,
+  Download,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
@@ -248,12 +249,22 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
             {/* Configured QR Image or Clean Tactical Placeholder */}
             <div className="mx-auto flex flex-col items-center justify-center">
               {paymentQrImage ? (
-                <div className="relative rounded-2xl border-2 border-ember/40 bg-white p-4 shadow-xl transition-transform hover:scale-[1.01]">
-                  <img
-                    src={paymentQrImage}
-                    alt={`UPI QR code for ${scrim.title}`}
-                    className="h-56 w-56 sm:h-64 sm:w-64 object-contain"
-                  />
+                <div className="flex flex-col items-center gap-3 sm:flex-row">
+                  <div className="relative rounded-2xl border-2 border-ember/40 bg-white p-4 shadow-xl transition-transform hover:scale-[1.01]">
+                    <img
+                      src={paymentQrImage}
+                      alt={`UPI QR code for ${scrim.title}`}
+                      className="h-56 w-56 sm:h-64 sm:w-64 object-contain"
+                    />
+                  </div>
+                  <a
+                    href={paymentQrImage}
+                    download={`a4esports-lobby-${scrim.id}-payment-qr.${paymentQrImage.startsWith("data:image/jpeg;") ? "jpg" : paymentQrImage.startsWith("data:image/webp;") ? "webp" : "png"}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-cyan/40 bg-cyan/10 px-4 py-2.5 font-mono text-xs font-semibold text-cyan transition hover:bg-cyan/20 active:scale-95"
+                  >
+                    <Download size={16} />
+                    Download QR
+                  </a>
                 </div>
               ) : (
                 <div className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-panel-2/80 p-6 h-56 w-56 sm:h-60 sm:w-60 text-center shadow-lg">
