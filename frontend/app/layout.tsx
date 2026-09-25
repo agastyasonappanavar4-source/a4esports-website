@@ -36,6 +36,10 @@ export const metadata: Metadata = {
   title: "A4 ESPORTS — India's Competitive Free Fire Platform",
   description:
     "Join daily custom rooms, free tournaments, and competitive Free Fire scrims. Built for serious mobile gamers.",
+  icons: {
+    icon: [{ url: "/logo.jpg", type: "image/jpeg" }],
+    apple: "/logo.jpg",
+  },
 };
 
 export default function RootLayout({
