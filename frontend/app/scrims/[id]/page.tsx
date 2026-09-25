@@ -1,3 +1,4 @@
+import { scrimModeLabel } from "@/lib/scrimMode";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
@@ -62,7 +63,7 @@ export default async function TournamentPage({
               {scrim.title}
             </h1>
             <p className="mt-1 font-mono text-xs sm:text-sm font-semibold uppercase tracking-wider text-cyan">
-              {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
+              {scrimModeLabel(scrim.mode)}
             </p>
           </div>
         </div>

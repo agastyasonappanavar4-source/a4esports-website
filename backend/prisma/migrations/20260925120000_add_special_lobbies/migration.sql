@@ -1,0 +1,1 @@
+ALTER TABLE `Scrim` MODIFY `mode` ENUM('BR', 'CS', 'SPECIAL') NOT NULL;

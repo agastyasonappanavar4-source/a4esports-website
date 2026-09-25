@@ -1,5 +1,6 @@
 import type { Scrim, Slot } from "@/lib/scrims";
 import type { SlotTime } from "@/lib/slotTime";
+import type { ScrimMode } from "@/lib/scrimMode";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -50,7 +51,7 @@ export async function getAdminScrimByIdRequest(id: number): Promise<Scrim> {
 
 export interface ScrimInput {
   title: string;
-  mode: "BR" | "CS";
+  mode: ScrimMode;
   fee: number;
   date: string;
   image: string;
@@ -248,7 +249,7 @@ export interface AdminRegistrationWithDetails extends AdminRegistration {
     id: number;
     title: string;
     fee: number;
-    mode: "BR" | "CS";
+  mode: ScrimMode;
   };
   slot: {
     id: number;
@@ -301,7 +302,7 @@ export interface PendingPaymentItem {
   paymentVerificationRequestedAt: string;
   createdAt: string;
   user?: { id: number; username: string; email: string };
-  scrim: { id: number; title: string; fee: number; mode: "BR" | "CS" };
+  scrim: { id: number; title: string; fee: number; mode: ScrimMode };
   slot: { id: number; time: SlotTime; customTime?: string | null };
 }
 
@@ -451,4 +452,3 @@ export async function deleteSlotMatchRequest(matchId: number) {
   });
   return handle(response);
 }
-

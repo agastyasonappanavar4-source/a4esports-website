@@ -1,4 +1,5 @@
 import type { SlotTime } from "@/lib/slotTime";
+import type { ScrimMode } from "@/lib/scrimMode";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -29,7 +30,7 @@ export interface MyRegistration {
     id: number;
     title: string;
     image?: string;
-    mode: "BR" | "CS";
+    mode: ScrimMode;
     fee: number;
     date: string;
     maxTeams: number;

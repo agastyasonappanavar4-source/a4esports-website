@@ -123,6 +123,9 @@ export const createScrim = async (req, res) => {
                 message: "Title, mode, date and maxTeams are required.",
             });
         }
+        if (!["BR", "CS", "SPECIAL"].includes(mode)) {
+            return res.status(400).json({ success: false, message: "Invalid tournament mode." });
+        }
 
         const defaultSlotDefs = [
             { time: "PM_3", customTime: slotTimes?.[0] || "3:00 PM" },
@@ -130,6 +133,13 @@ export const createScrim = async (req, res) => {
             { time: "PM_9", customTime: slotTimes?.[2] || "9:00 PM" },
             { time: "AM_12", customTime: slotTimes?.[3] || "12:00 AM" },
         ];
+
+        const selectedSlotDefs = mode === "SPECIAL" && Array.isArray(req.body.slots)
+            ? defaultSlotDefs.filter((slot) => req.body.slots.includes(slot.time))
+            : defaultSlotDefs;
+        if (selectedSlotDefs.length === 0) {
+            return res.status(400).json({ success: false, message: "Select at least one time slot." });
+        }
 
         const scrim = await prisma.scrim.create({
             data: {
@@ -142,7 +152,7 @@ export const createScrim = async (req, res) => {
                 rules: rules || "",
                 maxTeams: Number(maxTeams),
                 slots: {
-                    create: defaultSlotDefs.map((s) => ({
+                    create: selectedSlotDefs.map((s) => ({
                         time: s.time,
                         customTime: s.customTime,
                         status: "OPEN",

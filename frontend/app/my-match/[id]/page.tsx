@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimModeLabel } from "@/lib/scrimMode";
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -199,7 +200,7 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
             </span>
 
             <span className="font-mono text-xs font-bold text-muted-foreground uppercase">
-              {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · {timing}
+              {scrimModeLabel(scrim.mode)} · {timing}
             </span>
           </div>
 
@@ -250,7 +251,7 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
                 </div>
                 <div className="flex items-center gap-3">
                   <Trophy size={18} className="text-amber shrink-0" />
-                  <span>{scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}</span>
+                  <span>{scrimModeLabel(scrim.mode)}</span>
                 </div>
               </div>
             </div>

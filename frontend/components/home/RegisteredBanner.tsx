@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimModeLabel } from "@/lib/scrimMode";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -126,7 +127,7 @@ export default function RegisteredBanner() {
                   </span>
 
                   <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground border border-border/60 rounded px-1.5 py-0.5 shrink-0">
-                    {reg.scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
+                    {scrimModeLabel(reg.scrim.mode)}
                   </span>
                 </div>
 

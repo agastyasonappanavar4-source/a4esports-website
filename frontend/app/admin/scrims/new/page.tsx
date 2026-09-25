@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
 import { createScrimRequest, uploadImageRequest, type ScrimInput } from "@/services/admin";
 import { BR_SLOT_TIMES, CS_SLOT_TIMES, slotTimeLabel, type SlotTime } from "@/lib/slotTime";
+import type { ScrimMode } from "@/lib/scrimMode";
 
 export default function NewScrimPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function NewScrimPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const availableSlots = form.mode === "BR" ? BR_SLOT_TIMES : CS_SLOT_TIMES;
+  const availableSlots = form.mode === "CS" ? CS_SLOT_TIMES : BR_SLOT_TIMES;
 
   useEffect(() => {
     if (!authLoading && (!user || !user.isAdmin)) {
@@ -141,14 +142,15 @@ export default function NewScrimPage() {
                 <select
                   value={form.mode}
                   onChange={(e) => {
-                    const mode = e.target.value as "BR" | "CS";
+                    const mode = e.target.value as ScrimMode;
                     update("mode", mode);
-                    setSelectedSlots((prev) => prev.filter((time) => (mode === "BR" ? BR_SLOT_TIMES : CS_SLOT_TIMES).includes(time)));
+                    setSelectedSlots((prev) => prev.filter((time) => (mode === "CS" ? CS_SLOT_TIMES : BR_SLOT_TIMES).includes(time)));
                   }}
                   className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
                 >
                   <option value="BR">Battle Royale</option>
                   <option value="CS">Clash Squad</option>
+                  <option value="SPECIAL">Special Lobbies</option>
                 </select>
               </div>
 
@@ -200,7 +202,7 @@ export default function NewScrimPage() {
 
             <div>
               <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Time Slots ({form.mode === "BR" ? "up to 4" : "up to 3"})
+                Time Slots (up to {availableSlots.length})
               </label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {availableSlots.map((time) => {

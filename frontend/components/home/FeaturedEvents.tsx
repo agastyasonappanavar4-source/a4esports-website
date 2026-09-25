@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimModeLabel } from "@/lib/scrimMode";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
@@ -71,7 +72,7 @@ export default function FeaturedEvents({ scrims }: { scrims: Scrim[] }) {
                           </h1>
 
                           <p className="mt-2 font-mono text-xs sm:text-sm uppercase tracking-widest text-muted-foreground">
-                            {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · {formattedDate}
+                            {scrimModeLabel(scrim.mode)} · {formattedDate}
                             {openSlotLabels && ` · ${openSlotLabels}`}
                           </p>
 

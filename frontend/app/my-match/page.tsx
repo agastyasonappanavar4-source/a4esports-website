@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimModeLabel } from "@/lib/scrimMode";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -75,7 +76,7 @@ export default function MyMatchesPage() {
               >
                 <div>
                   <span className="font-mono text-xs uppercase tracking-widest text-cyan">
-                    {reg.scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
+                    {scrimModeLabel(reg.scrim.mode)}
                   </span>
                   <h2 className="mt-1 font-display text-xl font-bold uppercase text-foreground">
                     {reg.scrim.title}

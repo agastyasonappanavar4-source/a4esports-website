@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimModeLabel } from "@/lib/scrimMode";
 import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ShieldCheck, Users, Phone } from "lucide-react";
@@ -197,7 +198,7 @@ function ScrimRegisterForm() {
         <div className="rounded-xl border border-border bg-panel p-6 sm:p-8 shadow-xl">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-mono text-xs uppercase tracking-wider text-cyan">
-              {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · {slotTimeLabel(slot.time)}
+              {scrimModeLabel(scrim.mode)} · {slotTimeLabel(slot.time)}
             </span>
 
             {scrim.prizePool && (

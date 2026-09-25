@@ -10,17 +10,19 @@ import { getScrims, type Scrim } from "@/lib/scrims";
 import { canRegisterForScrim } from "@/lib/scrimAvailability";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
+import { scrimModeLabel } from "@/lib/scrimMode";
 
 export default async function PlatformHome({ query = "" }: { query?: string }) {
   const allScrims = await getScrims();
   const normalizedQuery = query.trim().toLowerCase();
   const scrims = allScrims.filter((scrim) =>
     canRegisterForScrim(scrim) &&
-    (!normalizedQuery || `${scrim.title} ${scrim.mode}`.toLowerCase().includes(normalizedQuery))
+    (!normalizedQuery || `${scrim.title} ${scrim.mode} ${scrimModeLabel(scrim.mode)}`.toLowerCase().includes(normalizedQuery))
   );
 
   const battleRoyale = scrims.filter((scrim: Scrim) => scrim.mode === "BR");
   const clashSquad = scrims.filter((scrim: Scrim) => scrim.mode === "CS");
+  const specialLobbies = scrims.filter((scrim: Scrim) => scrim.mode === "SPECIAL");
 
   return (
     <main className="min-h-screen bg-background">
@@ -54,6 +56,7 @@ export default async function PlatformHome({ query = "" }: { query?: string }) {
       <FeaturedEvents scrims={scrims.slice(0, 3)} />
       <TournamentRow anchorId="scrims" title="Battle Royale" tournaments={battleRoyale} />
       <TournamentRow title="Clash Squad" tournaments={clashSquad} />
+      <TournamentRow title="Special Lobbies" tournaments={specialLobbies} />
 
       <Features />
       <Footer />

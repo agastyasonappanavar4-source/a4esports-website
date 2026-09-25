@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimModeLabel } from "@/lib/scrimMode";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -435,7 +436,7 @@ export default function AdminDashboardPage() {
                             {scrim.status}
                           </span>
                           <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                            · {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"}
+                            · {scrimModeLabel(scrim.mode)}
                           </span>
                           {scrim.slots.some((s) => s.roomReleased) && (
                             <span className="font-mono text-xs uppercase tracking-widest text-amber">

@@ -1,5 +1,6 @@
 import { apiRequest } from "./api";
 import type { SlotTime } from "./slotTime";
+import type { ScrimMode } from "./scrimMode";
 
 export interface Slot {
   id: number;
@@ -17,7 +18,7 @@ export interface Slot {
 export interface Scrim {
   id: number;
   title: string;
-  mode: "BR" | "CS";
+  mode: ScrimMode;
   fee: number;
   maxTeams: number;
   date: string;

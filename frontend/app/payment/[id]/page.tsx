@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimModeLabel } from "@/lib/scrimMode";
 import { useEffect, useState, useRef, use } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -183,7 +184,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
           <div className="border-b border-border/80 bg-panel-2 p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <span className="rounded-full border border-cyan/40 bg-cyan/10 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-cyan">
-                {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · Manual UPI Pay
+                {scrimModeLabel(scrim.mode)} · Manual UPI Pay
               </span>
               <span className="font-mono text-xs font-bold text-amber">
                 ₹{scrim.fee} Payable

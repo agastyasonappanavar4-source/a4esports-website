@@ -1,5 +1,7 @@
 "use client";
 
+import { scrimModeLabel } from "@/lib/scrimMode";
+import type { ScrimMode } from "@/lib/scrimMode";
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -540,7 +542,7 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-cyan animate-pulse-dot" />
               <span className="font-mono text-xs uppercase tracking-widest text-cyan font-bold">
-                {scrim.mode === "BR" ? "Battle Royale" : "Clash Squad"} · Tournament Hub
+                {scrimModeLabel(scrim.mode)} · Tournament Hub
               </span>
             </div>
             <h1 className="mt-1 font-display text-2xl sm:text-3xl font-bold uppercase text-foreground">
@@ -609,11 +611,12 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
                 </label>
                 <select
                   value={scrim.mode}
-                  onChange={(e) => updateGeneral("mode", e.target.value as "BR" | "CS")}
+                  onChange={(e) => updateGeneral("mode", e.target.value as ScrimMode)}
                   className="w-full border border-border bg-panel-2 p-3 font-mono text-foreground outline-none focus:border-cyan"
                 >
                   <option value="BR">Battle Royale</option>
                   <option value="CS">Clash Squad</option>
+                  <option value="SPECIAL">Special Lobbies</option>
                 </select>
               </div>
 
