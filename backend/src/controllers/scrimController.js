@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
 import { isScrimDatePast } from "../utils/scrimAvailability.js";
+import { normalizePaymentQrImage, normalizePaymentUpiId, PaymentSettingsError } from "../utils/paymentSettings.js";
 
 const publicSlotInclude = {
     slots: {
@@ -19,6 +20,8 @@ const publicSlotInclude = {
         orderBy: { time: "asc" },
     },
 };
+
+const publicPaymentOmit = { paymentQrImage: true, paymentUpiId: true };
 
 const slotInclude = {
     slots: {
@@ -40,6 +43,7 @@ export const getAllScrims = async (req, res) => {
     try {
         const scrims = await prisma.scrim.findMany({
             orderBy: { createdAt: "desc" },
+            omit: publicPaymentOmit,
             include: {
                 _count: { select: { registrations: true } },
                 ...publicSlotInclude,
@@ -70,6 +74,7 @@ export const getScrimById = async (req, res) => {
 
         const scrim = await prisma.scrim.findUnique({
             where: { id: Number(id) },
+            omit: publicPaymentOmit,
             include: publicSlotInclude,
         });
 
@@ -115,7 +120,7 @@ export const getAdminScrimById = async (req, res) => {
 // CREATE scrim (lobby). Automatically creates exactly 4 configurable time slots.
 export const createScrim = async (req, res) => {
     try {
-        const { title, mode, fee, date, image, prizePool, rules, maxTeams, slotTimes } = req.body;
+        const { title, mode, fee, date, image, prizePool, rules, maxTeams, slotTimes, paymentQrImage, paymentUpiId } = req.body;
 
         if (!title || !mode || !date || !maxTeams) {
             return res.status(400).json({
@@ -125,6 +130,11 @@ export const createScrim = async (req, res) => {
         }
         if (!["BR", "CS", "SPECIAL"].includes(mode)) {
             return res.status(400).json({ success: false, message: "Invalid tournament mode." });
+        }
+        const qrImage = normalizePaymentQrImage(paymentQrImage ?? "");
+        const upiId = normalizePaymentUpiId(paymentUpiId ?? "");
+        if (Number(fee) > 0 && !qrImage && !upiId) {
+            return res.status(400).json({ success: false, message: "Add a payment QR image or UPI ID for a paid lobby." });
         }
 
         const defaultSlotDefs = [
@@ -148,6 +158,8 @@ export const createScrim = async (req, res) => {
                 fee: Number(fee) || 0,
                 date: new Date(date),
                 image: image || "",
+                paymentQrImage: qrImage,
+                paymentUpiId: upiId,
                 prizePool: prizePool || "TBD",
                 rules: rules || "",
                 maxTeams: Number(maxTeams),
@@ -164,6 +176,9 @@ export const createScrim = async (req, res) => {
 
         res.status(201).json({ success: true, data: scrim });
     } catch (error) {
+        if (error instanceof PaymentSettingsError) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
         console.error(error);
 
         res.status(500).json({
@@ -177,7 +192,7 @@ export const createScrim = async (req, res) => {
 export const updateScrim = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, mode, fee, date, image, prizePool, rules, maxTeams } = req.body;
+        const { title, mode, fee, date, image, prizePool, rules, maxTeams, paymentQrImage, paymentUpiId } = req.body;
 
         const scrim = await prisma.scrim.update({
             where: { id: Number(id) },
@@ -187,6 +202,8 @@ export const updateScrim = async (req, res) => {
                 ...(fee !== undefined && { fee: Number(fee) }),
                 ...(date !== undefined && { date: new Date(date) }),
                 ...(image !== undefined && { image }),
+                ...(paymentQrImage !== undefined && { paymentQrImage: normalizePaymentQrImage(paymentQrImage) }),
+                ...(paymentUpiId !== undefined && { paymentUpiId: normalizePaymentUpiId(paymentUpiId) }),
                 ...(prizePool !== undefined && { prizePool }),
                 ...(rules !== undefined && { rules }),
                 ...(maxTeams !== undefined && { maxTeams: Number(maxTeams) }),
@@ -196,6 +213,9 @@ export const updateScrim = async (req, res) => {
 
         res.json({ success: true, data: scrim });
     } catch (error) {
+        if (error instanceof PaymentSettingsError) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
         console.error(error);
 
         res.status(500).json({

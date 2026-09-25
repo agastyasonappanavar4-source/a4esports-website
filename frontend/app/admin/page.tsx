@@ -308,6 +308,7 @@ export default function AdminDashboardPage() {
                     <span className="text-amber font-bold">₹{p.scrim?.fee}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground truncate">{p.scrim?.title} · {slotTimeLabel(p.slot)}</p>
+                  {p.scrim?.paymentUpiId && <p className="text-[11px] text-cyan truncate">UPI: {p.scrim.paymentUpiId}</p>}
                   <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
                     <span>IGL: {p.iglName}</span>
                     <span>{p.phone}</span>
@@ -620,6 +621,7 @@ export default function AdminDashboardPage() {
                           <td className="p-4">
                             <div className="text-foreground font-semibold truncate max-w-[200px]">{p.scrim?.title}</div>
                             <div className="text-xs text-cyan mt-0.5">{slotTimeLabel(p.slot)}</div>
+                            {p.scrim?.paymentUpiId && <div className="text-[11px] text-muted-foreground mt-0.5">UPI: {p.scrim.paymentUpiId}</div>}
                           </td>
                           <td className="p-4 text-xs text-muted-foreground space-y-0.5">
                             <div className="text-foreground">{p.iglName}</div>

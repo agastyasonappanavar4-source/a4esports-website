@@ -8,6 +8,7 @@ import { useToast } from "@/context/ToastContext";
 import { createScrimRequest, uploadImageRequest, type ScrimInput } from "@/services/admin";
 import { BR_SLOT_TIMES, CS_SLOT_TIMES, slotTimeLabel, type SlotTime } from "@/lib/slotTime";
 import type { ScrimMode } from "@/lib/scrimMode";
+import PaymentQrField from "@/components/admin/PaymentQrField";
 
 export default function NewScrimPage() {
   const router = useRouter();
@@ -20,6 +21,8 @@ export default function NewScrimPage() {
     fee: 0,
     date: "",
     image: "",
+    paymentQrImage: "",
+    paymentUpiId: "",
     rules: "",
     maxTeams: 48,
   });
@@ -77,6 +80,10 @@ export default function NewScrimPage() {
     }
     if (selectedSlots.length === 0) {
       showToast("Select at least one time slot.", "error");
+      return;
+    }
+    if (form.fee > 0 && !form.paymentQrImage && !form.paymentUpiId?.trim()) {
+      showToast("Add a payment QR image or UPI ID before creating a paid lobby.", "error");
       return;
     }
 
@@ -198,6 +205,25 @@ export default function NewScrimPage() {
                 )}
               </div>
               {uploading && <p className="mt-1 font-mono text-xs text-amber animate-pulse">Uploading image...</p>}
+            </div>
+
+            <PaymentQrField
+              value={form.paymentQrImage ?? ""}
+              onChange={(value) => update("paymentQrImage", value)}
+            />
+            <div>
+              <label className="mb-2 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                UPI ID for this lobby (optional with QR)
+              </label>
+              <input
+                value={form.paymentUpiId ?? ""}
+                onChange={(e) => update("paymentUpiId", e.target.value)}
+                placeholder="name@bank"
+                className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
+              />
+              <p className="mt-1 font-mono text-xs text-muted-foreground">
+                If entered, it must belong to the same payment account as the QR. Leave blank for QR-only payments.
+              </p>
             </div>
 
             <div>

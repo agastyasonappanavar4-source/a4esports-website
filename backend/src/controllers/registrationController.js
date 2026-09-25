@@ -134,7 +134,7 @@ export const registerTeam = async (req, res) => {
                 paymentStatus,
             },
             include: {
-                scrim: true,
+                scrim: { omit: { paymentQrImage: true, paymentUpiId: true } },
                 slot: true,
             },
         });
@@ -212,7 +212,7 @@ export const getRegistrationDetails = async (req, res) => {
                 id: Number(req.params.id),
             },
             include: {
-                scrim: true,
+                scrim: { omit: { paymentQrImage: true, paymentUpiId: true } },
                 slot: true,
             },
         });
@@ -300,7 +300,7 @@ export const getMyRegistrations = async (req, res) => {
                 userId: req.user.userId,
                 paymentStatus: { in: ["PAID", "PENDING", "FAILED"] },
             },
-            include: { scrim: true, slot: true },
+            include: { scrim: { omit: { paymentQrImage: true, paymentUpiId: true } }, slot: true },
             orderBy: { createdAt: "desc" },
         });
 
@@ -387,7 +387,7 @@ export const getRegistrationsBySlot = async (req, res) => {
                 user: {
                     select: { id: true, username: true, email: true },
                 },
-                scrim: true,
+                scrim: { omit: { paymentQrImage: true, paymentUpiId: true } },
                 slot: true,
             },
             orderBy: [{ paymentStatus: "asc" }, { slotNumber: "asc" }, { createdAt: "asc" }],

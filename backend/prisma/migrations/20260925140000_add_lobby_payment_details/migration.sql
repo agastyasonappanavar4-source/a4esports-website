@@ -1,0 +1,2 @@
+ALTER TABLE `Scrim` ADD COLUMN `paymentQrImage` LONGTEXT NULL,
+    ADD COLUMN `paymentUpiId` VARCHAR(191) NULL;

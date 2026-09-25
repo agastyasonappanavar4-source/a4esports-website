@@ -202,7 +202,7 @@ export const getPendingPayments = async (req, res) => {
                     select: { id: true, username: true, email: true },
                 },
                 scrim: {
-                    select: { id: true, title: true, fee: true, mode: true },
+                    select: { id: true, title: true, fee: true, mode: true, paymentUpiId: true },
                 },
                 slot: {
                     select: { id: true, time: true, customTime: true },

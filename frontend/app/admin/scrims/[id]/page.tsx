@@ -46,6 +46,7 @@ import {
   type SlotMatch,
 } from "@/services/admin";
 import { Skeleton } from "@/components/ui/Skeleton";
+import PaymentQrField from "@/components/admin/PaymentQrField";
 
 export default function ManageScrimPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -200,6 +201,8 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
         fee: scrim.fee,
         date: scrim.date,
         image: scrim.image,
+        paymentQrImage: scrim.paymentQrImage,
+        paymentUpiId: scrim.paymentUpiId,
         prizePool: scrim.prizePool,
         rules: scrim.rules,
         maxTeams: scrim.maxTeams,
@@ -696,6 +699,30 @@ export default function ManageScrimPage({ params }: { params: Promise<{ id: stri
                   </div>
                 )}
               </div>
+            </div>
+
+            <PaymentQrField
+              value={scrim.paymentQrImage ?? null}
+              onChange={(value) => updateGeneral("paymentQrImage", value)}
+            />
+            <div>
+              <label className="mb-1.5 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                UPI ID for this lobby (optional with QR)
+              </label>
+              <input
+                value={scrim.paymentUpiId ?? ""}
+                onChange={(e) => updateGeneral("paymentUpiId", e.target.value)}
+                placeholder="name@bank"
+                className="w-full border border-border bg-panel-2 p-3 font-mono text-sm text-foreground outline-none focus:border-cyan"
+              />
+              <p className="mt-1 font-mono text-xs text-muted-foreground">
+                Use the UPI ID that belongs to this QR. Leave it blank for QR-only payments.
+              </p>
+              {scrim.fee > 0 && scrim.paymentQrImage === "" && !scrim.paymentUpiId && (
+                <p className="mt-2 font-mono text-xs text-amber">
+                  This paid lobby has no payment method. Players will see payment details unavailable until you add a new QR or UPI ID.
+                </p>
+              )}
             </div>
 
             <div>

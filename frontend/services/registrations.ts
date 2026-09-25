@@ -30,6 +30,8 @@ export interface MyRegistration {
     id: number;
     title: string;
     image?: string;
+    paymentQrImage?: string | null;
+    paymentUpiId?: string | null;
     mode: ScrimMode;
     fee: number;
     date: string;

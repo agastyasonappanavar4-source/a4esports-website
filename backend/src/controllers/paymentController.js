@@ -211,7 +211,7 @@ export const getPaymentStatus = async (req, res) => {
         const { registrationId } = req.params;
         const registration = await prisma.registration.findUnique({
             where: { id: Number(registrationId) },
-            include: { scrim: true, slot: true },
+            include: { scrim: { omit: { paymentQrImage: true, paymentUpiId: true } }, slot: true },
         });
 
         if (!registration) {

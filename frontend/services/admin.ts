@@ -55,6 +55,8 @@ export interface ScrimInput {
   fee: number;
   date: string;
   image: string;
+  paymentQrImage?: string | null;
+  paymentUpiId?: string | null;
   prizePool?: string;
   rules: string;
   maxTeams: number;
@@ -249,7 +251,8 @@ export interface AdminRegistrationWithDetails extends AdminRegistration {
     id: number;
     title: string;
     fee: number;
-  mode: ScrimMode;
+    mode: ScrimMode;
+    paymentUpiId?: string | null;
   };
   slot: {
     id: number;
@@ -302,7 +305,7 @@ export interface PendingPaymentItem {
   paymentVerificationRequestedAt: string;
   createdAt: string;
   user?: { id: number; username: string; email: string };
-  scrim: { id: number; title: string; fee: number; mode: ScrimMode };
+  scrim: { id: number; title: string; fee: number; mode: ScrimMode; paymentUpiId?: string | null };
   slot: { id: number; time: SlotTime; customTime?: string | null };
 }
 

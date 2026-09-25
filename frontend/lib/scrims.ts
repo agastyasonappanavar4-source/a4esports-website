@@ -23,6 +23,8 @@ export interface Scrim {
   maxTeams: number;
   date: string;
   image: string;
+  paymentQrImage?: string | null;
+  paymentUpiId?: string | null;
   prizePool?: string;
   rules: string;
   status: string;

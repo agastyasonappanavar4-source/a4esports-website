@@ -44,6 +44,12 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const isSubmittingRef = useRef(false);
+  // Older lobbies retain their previous site-wide payment details until an
+  // admin sets or clears either field for that lobby.
+  const usesLegacyPayment = registration?.scrim.paymentQrImage === null && registration?.scrim.paymentUpiId === null;
+  const paymentQrImage = usesLegacyPayment ? QR_IMAGE : (registration?.scrim.paymentQrImage || "");
+  const paymentUpiId = usesLegacyPayment ? UPI_ID : (registration?.scrim.paymentUpiId?.trim() || "");
+  const hasPaymentMethod = Boolean(paymentQrImage || paymentUpiId);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -90,7 +96,8 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
   }, [timeLeft]);
 
   const handleCopyUPI = () => {
-    navigator.clipboard.writeText(UPI_ID).then(() => {
+    if (!paymentUpiId) return;
+    navigator.clipboard.writeText(paymentUpiId).then(() => {
       setCopied(true);
       showToast("UPI ID copied to clipboard!", "success");
       setTimeout(() => setCopied(false), 2500);
@@ -98,7 +105,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
   };
 
   const handleContinueAndVerify = async () => {
-    if (!canVerify || submitting || isSubmittingRef.current) return;
+    if (!canVerify || !hasPaymentMethod || submitting || isSubmittingRef.current) return;
 
     isSubmittingRef.current = true;
     setSubmitting(true);
@@ -231,7 +238,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
           <div className="p-5 sm:p-7 space-y-6">
             <div className="text-center">
               <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                Scan UPI QR Code To Pay
+                {paymentQrImage ? "Scan this lobby's UPI QR to pay" : "Pay this lobby using UPI"}
               </p>
               <p className="mt-1 font-display text-3xl font-black text-foreground">
                 ₹{scrim.fee}
@@ -240,11 +247,11 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
 
             {/* Configured QR Image or Clean Tactical Placeholder */}
             <div className="mx-auto flex flex-col items-center justify-center">
-              {QR_IMAGE ? (
+              {paymentQrImage ? (
                 <div className="relative rounded-2xl border-2 border-ember/40 bg-white p-4 shadow-xl transition-transform hover:scale-[1.01]">
                   <img
-                    src={QR_IMAGE}
-                    alt="Official UPI QR Code"
+                    src={paymentQrImage}
+                    alt={`UPI QR code for ${scrim.title}`}
                     className="h-56 w-56 sm:h-64 sm:w-64 object-contain"
                   />
                 </div>
@@ -254,26 +261,26 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
                     <Clock size={24} />
                   </div>
                   <p className="font-display text-sm font-bold uppercase tracking-wider text-foreground">
-                    Official QR Code
+                    {paymentUpiId ? "UPI ID available" : "Payment unavailable"}
                   </p>
                   <p className="mt-1 font-mono text-[11px] text-muted-foreground leading-relaxed">
-                    QR image to be uploaded<br />Pay directly using UPI ID below
+                    {paymentUpiId ? "Pay using the UPI ID below" : "Payment details are being updated. Please check back soon."}
                   </p>
                 </div>
               )}
-              <p className="mt-2.5 font-mono text-[11px] text-muted-foreground text-center">
-                Scan using Google Pay, PhonePe, Paytm, BHIM, or any UPI app
-              </p>
+              {hasPaymentMethod && <p className="mt-2.5 font-mono text-[11px] text-muted-foreground text-center">
+                Pay using Google Pay, PhonePe, Paytm, BHIM, or any UPI app
+              </p>}
             </div>
 
             {/* Copyable UPI ID Box */}
-            <div className="rounded-xl border border-border bg-panel-2 p-3.5 flex items-center justify-between gap-3">
+            {paymentUpiId && <div className="rounded-xl border border-border bg-panel-2 p-3.5 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                   UPI ID (Tap to Copy)
                 </p>
                 <p className="font-mono text-sm font-bold text-cyan truncate mt-0.5">
-                  {UPI_ID}
+                  {paymentUpiId}
                 </p>
               </div>
               <button
@@ -283,15 +290,15 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
                 {copied ? <CheckCircle2 size={14} className="text-cyan" /> : <Copy size={14} />}
                 {copied ? "Copied" : "Copy"}
               </button>
-            </div>
+            </div>}
 
             {/* Instructions */}
-            <div className="rounded-xl border border-border/80 bg-panel-2/60 p-4 space-y-2 text-xs font-mono text-muted-foreground">
+            {hasPaymentMethod && <div className="rounded-xl border border-border/80 bg-panel-2/60 p-4 space-y-2 text-xs font-mono text-muted-foreground">
               <div className="flex items-start gap-2">
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-ember/20 text-[10px] font-bold text-ember">
                   1
                 </span>
-                <span>Open your UPI app and scan the QR code above.</span>
+                <span>{paymentQrImage ? "Open your UPI app and scan this lobby's QR code." : "Open your UPI app and pay using this lobby's UPI ID."}</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-ember/20 text-[10px] font-bold text-ember">
@@ -305,7 +312,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
                 </span>
                 <span>After paying, wait 15 seconds, then request manual payment review.</span>
               </div>
-            </div>
+            </div>}
 
             {/* 15-Second Timer Bar */}
             <div className="space-y-2">
@@ -327,14 +334,16 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
             <div>
               <button
                 onClick={handleContinueAndVerify}
-                disabled={!canVerify || submitting}
+                disabled={!canVerify || !hasPaymentMethod || submitting}
                 className={`btn-press w-full rounded-xl py-4 font-display text-base font-bold uppercase tracking-wider transition ${
-                  canVerify
+                  canVerify && hasPaymentMethod
                     ? "bg-cyan text-void shadow-lg shadow-cyan/20 hover:bg-cyan/90 cursor-pointer"
                     : "border border-border bg-panel-2 text-muted-foreground opacity-60 cursor-not-allowed"
                 }`}
               >
-                {submitting ? (
+                {!hasPaymentMethod ? (
+                  "Payment Details Unavailable"
+                ) : submitting ? (
                   "Submitting Verification..."
                 ) : canVerify ? (
                   "Continue & Verify"

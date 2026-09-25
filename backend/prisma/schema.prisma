@@ -61,6 +61,8 @@ model Scrim {
   fee             Int
   date            DateTime
   image           String
+  paymentQrImage  String?           @db.LongText
+  paymentUpiId     String?
   prizePool       String?           @default("TBD")
   rules           String            @db.Text
   maxTeams        Int

@@ -16,6 +16,19 @@ export async function ensureDatabaseSchema() {
             console.log("✅ SPECIAL tournament mode added.");
         }
 
+        const paymentColumns = await prisma.$queryRawUnsafe(
+            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Scrim' AND COLUMN_NAME IN ('paymentQrImage', 'paymentUpiId')"
+        );
+        const paymentColumnNames = new Set(paymentColumns.map((column) => column.COLUMN_NAME));
+        if (!paymentColumnNames.has("paymentQrImage")) {
+            await prisma.$executeRawUnsafe("ALTER TABLE `Scrim` ADD COLUMN `paymentQrImage` LONGTEXT NULL;");
+            console.log("✅ Per-lobby payment QR storage added.");
+        }
+        if (!paymentColumnNames.has("paymentUpiId")) {
+            await prisma.$executeRawUnsafe("ALTER TABLE `Scrim` ADD COLUMN `paymentUpiId` VARCHAR(191) NULL;");
+            console.log("✅ Per-lobby UPI ID storage added.");
+        }
+
         // 1. Check Slot table columns
         const slotCols = await prisma.$queryRawUnsafe(
             "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Slot' AND COLUMN_NAME = 'customTime'"
