@@ -34,7 +34,7 @@ export default function Navbar({ initialQuery = "" }: { initialQuery?: string })
   }, []);
 
   const navigateToSearch = (query: string) => {
-    const destination = `/platform${query ? `?q=${encodeURIComponent(query)}` : ""}#scrims`;
+    const destination = `/platform${query ? `?q=${encodeURIComponent(query)}` : ""}`;
     if (window.location.pathname === "/platform") {
       router.replace(destination, { scroll: false });
     } else {

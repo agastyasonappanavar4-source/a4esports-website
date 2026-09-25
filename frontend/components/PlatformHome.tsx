@@ -40,7 +40,7 @@ export default async function PlatformHome({ query = "" }: { query?: string }) {
                 </p>
               </div>
             </div>
-            <Link href="/platform#scrims" className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-cyan hover:text-cyan">
+            <Link href="/platform" className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 font-mono text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-cyan hover:text-cyan">
               <X size={14} aria-hidden="true" /> Clear search
             </Link>
           </div>
