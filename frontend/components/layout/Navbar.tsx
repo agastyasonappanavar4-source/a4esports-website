@@ -1,28 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import { Menu, Search, User, LogOut, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 
 const TICKER = [
-  "WEEKLY BR CHAMPIONSHIP · REG OPEN",
-  "ROOM ID DROPS 15 MIN BEFORE MATCH",
-  "WEEKEND CLASH SQUAD · SLOTS FILLING",
-  "PAYOUTS PROCESSED WITHIN 24H",
+  "BROWSE UPCOMING SCRIMS",
+  "ROOM DETAILS RELEASED BY ADMIN WHEN AVAILABLE",
+  "PAID ENTRIES NEED MANUAL CONFIRMATION",
+  "CHECK YOUR MATCH CARD FOR UPDATES",
 ];
 
 export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = String(new FormData(event.currentTarget).get("q") || "").trim();
+    router.push(`/platform${query ? `?q=${encodeURIComponent(query)}` : ""}#scrims`);
+  };
 
   const handleBrowseClick = () => {
     const section = document.getElementById("scrims");
     if (section) {
       section.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      router.push("/platform#scrims");
     }
   };
 
@@ -60,16 +71,26 @@ export default function Navbar() {
           </div>
 
           <div className="hidden w-full max-w-xl px-10 lg:block">
-            <div className="flex items-center border border-border bg-panel px-4 py-2.5 transition focus-within:border-cyan">
+            <form onSubmit={handleSearch} role="search" className="flex items-center border border-border bg-panel px-4 py-2.5 transition focus-within:border-cyan">
               <Search size={16} className="text-muted-foreground" />
               <input
                 placeholder="Search tournaments..."
+                aria-label="Search tournaments"
+                name="q"
                 className="ml-3 w-full bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
-            </div>
+            </form>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3">
+            <button
+              onClick={() => setMobileSearchOpen((open) => !open)}
+              aria-label="Search tournaments"
+              aria-expanded={mobileSearchOpen}
+              className="border border-border p-2.5 text-muted-foreground transition hover:text-cyan lg:hidden"
+            >
+              <Search size={18} />
+            </button>
             <button
               onClick={handleBrowseClick}
               className="hidden font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground transition hover:text-cyan sm:block"
@@ -123,6 +144,18 @@ export default function Navbar() {
             )}
           </div>
         </div>
+
+        {mobileSearchOpen && (
+          <form onSubmit={handleSearch} role="search" className="border-t border-border px-3 py-2 lg:hidden">
+            <input
+              name="q"
+              aria-label="Search tournaments"
+              placeholder="Search tournaments..."
+              autoFocus
+              className="w-full border border-border bg-panel-2 px-3 py-2 font-mono text-sm text-foreground outline-none focus:border-cyan"
+            />
+          </form>
+        )}
 
         <div className="overflow-hidden border-t border-border bg-panel py-1.5">
           <div className="flex w-max animate-marquee gap-10 whitespace-nowrap font-mono text-[11px] uppercase tracking-widest text-muted-foreground">

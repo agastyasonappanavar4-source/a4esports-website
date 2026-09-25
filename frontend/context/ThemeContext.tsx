@@ -23,6 +23,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem("ffs-theme") as Theme | null;
     const initial = stored === "light" ? "light" : "dark";
+    // Browser storage becomes available after the initial server render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(initial);
     document.documentElement.classList.toggle("light", initial === "light");
   }, []);

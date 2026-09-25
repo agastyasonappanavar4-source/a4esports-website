@@ -6,8 +6,8 @@ import { ArrowLeft, ShieldCheck, Users, Phone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastContext";
 import { getScrimById, type Scrim, type Slot } from "@/lib/scrims";
+import { canRegisterForScrim } from "@/lib/scrimAvailability";
 import { slotTimeLabel } from "@/lib/slotTime";
-import { createOrder, verifyPayment } from "@/services/payments";
 import { Skeleton } from "@/components/ui/Skeleton";
 import Navbar from "@/components/layout/Navbar";
 
@@ -35,6 +35,7 @@ function ScrimRegisterForm() {
   const { showToast } = useToast();
 
   const [scrim, setScrim] = useState<Scrim | null>(null);
+  const [scrimLoading, setScrimLoading] = useState(true);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [notFoundSlot, setNotFoundSlot] = useState(false);
   const [teamName, setTeamName] = useState("");
@@ -54,6 +55,7 @@ function ScrimRegisterForm() {
           setNotFoundSlot(true);
         }
       }
+      setScrimLoading(false);
     });
   }, [id, slotId]);
 
@@ -70,11 +72,18 @@ function ScrimRegisterForm() {
   };
 
   const handleSubmit = async () => {
-    if (!teamName || !iglName || !phone) {
-      showToast("Please fill all fields.", "error");
+    setCriticalError("");
+    if (!teamName.trim() || !iglName.trim() || !/^[0-9]{10}$/.test(phone)) {
+      const message = "Enter a team name, IGL name and a 10-digit phone number.";
+      setCriticalError(message);
+      showToast(message, "error");
       return;
     }
     if (!scrim || !slot) return;
+    if (!canRegisterForScrim(scrim) || slot.status !== "OPEN") {
+      setCriticalError("This tournament or time slot is no longer open for registration.");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -89,13 +98,15 @@ function ScrimRegisterForm() {
         method: "POST",
         credentials: "include",
         headers,
-        body: JSON.stringify({ slotId: slot.id, teamName, iglName, phone }),
+        body: JSON.stringify({ slotId: slot.id, teamName: teamName.trim(), iglName: iglName.trim(), phone }),
       });
 
-      const regData = await regResponse.json();
+      const regData = regResponse.headers.get("content-type")?.includes("application/json")
+        ? await regResponse.json()
+        : null;
 
       if (!regResponse.ok) {
-        throw new Error(regData.message || "Registration failed");
+        throw new Error(regData?.message || `Registration failed (server returned ${regResponse.status}). Please contact support.`);
       }
 
       const registration = regData.data;
@@ -108,16 +119,18 @@ function ScrimRegisterForm() {
       }
 
       // PAID SCRIM: Route directly to dedicated manual UPI payment page
-      showToast("Registration saved! Proceeding to payment...", "success");
+      showToast(regData.existing ? "Opening your pending payment." : "Registration saved. Payment is not confirmed yet.", "info");
       router.push(`/payment/${registration.id}`);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Something went wrong.", "error");
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setCriticalError(message);
+      showToast(message, "error");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (!scrim) {
+  if (scrimLoading) {
     return (
       <main className="min-h-screen bg-background bg-tactical-grid">
         <div className="mx-auto max-w-2xl px-6 py-12">
@@ -135,6 +148,10 @@ function ScrimRegisterForm() {
         </div>
       </main>
     );
+  }
+
+  if (!scrim) {
+    return <main className="min-h-screen bg-background p-8 text-center text-foreground">Tournament could not be loaded. Please return to the tournament list.</main>;
   }
 
   if (notFoundSlot || !slot) {
@@ -192,7 +209,7 @@ function ScrimRegisterForm() {
 
           <h1 className="mt-2 font-display text-3xl sm:text-4xl font-bold uppercase text-foreground">{scrim.title}</h1>
           <p className="mt-2 font-mono text-xs sm:text-sm text-muted-foreground">
-            Fill your team details to secure a slot. After confirming, you&apos;ll be taken back to the home page where your match will appear.
+            Enter your team details. Paid entries continue to UPI payment, then wait for admin confirmation before a slot is secured.
           </p>
 
           <div className="mt-8 space-y-5">
@@ -222,8 +239,11 @@ function ScrimRegisterForm() {
                 <Phone size={16} className="text-muted-foreground" />
                 <input
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   placeholder="9876543210"
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
                   className="w-full bg-transparent p-3.5 font-mono text-sm text-foreground outline-none"
                 />
               </div>
@@ -239,6 +259,12 @@ function ScrimRegisterForm() {
                 Fair play rules apply — hacks mean a permanent ban
               </div>
             </div>
+
+            {scrim.fee > 0 && (
+              <p className="font-mono text-xs text-muted-foreground">
+                Payment is checked manually. A pending registration does not guarantee a slot if the lobby fills before verification.
+              </p>
+            )}
 
             {criticalError && (
               <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 font-mono text-xs text-destructive">

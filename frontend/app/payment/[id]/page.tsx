@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef, use } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import {
   ArrowLeft,
   Copy,
@@ -40,7 +39,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [timeLeft, setTimeLeft] = useState(15);
-  const [canVerify, setCanVerify] = useState(false);
+  const canVerify = timeLeft === 0;
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const isSubmittingRef = useRef(false);
@@ -52,17 +51,17 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
   }, [authLoading, user, registrationId, router]);
 
   useEffect(() => {
-    if (!registrationId || isNaN(registrationId)) {
-      setError("Invalid registration ID.");
-      setLoading(false);
-      return;
-    }
+    if (!registrationId || isNaN(registrationId)) return;
 
     getRegistrationById(registrationId)
       .then((data) => {
         setRegistration(data);
         if (data.paymentStatus === "PAID") {
           showToast("This registration is already paid and confirmed.", "success");
+          router.replace(`/my-match/${data.id}`);
+        } else if (data.paymentStatus === "FAILED") {
+          router.replace(`/my-match/${data.id}`);
+        } else if (data.paymentVerificationRequestedAt) {
           router.replace(`/my-match/${data.id}`);
         }
       })
@@ -74,16 +73,12 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
 
   // 15-second visual countdown timer
   useEffect(() => {
-    if (timeLeft <= 0) {
-      setCanVerify(true);
-      return;
-    }
+    if (timeLeft <= 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          setCanVerify(true);
           return 0;
         }
         return prev - 1;
@@ -109,7 +104,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
     try {
       await requestPaymentVerification(registrationId);
       showToast(
-        "Payment verification submitted! Admin will verify and confirm your slot.",
+        "Payment review requested. Your slot remains pending until an admin confirms the payment.",
         "success"
       );
       router.push("/platform");
@@ -123,7 +118,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
     }
   };
 
-  if (loading) {
+  if (loading && Number.isSafeInteger(registrationId) && registrationId > 0) {
     return (
       <main className="min-h-screen bg-background bg-tactical-grid">
         <Navbar />
@@ -145,7 +140,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
             <h1 className="font-display text-2xl font-bold uppercase text-foreground">
               Registration Error
             </h1>
-            <p className="mt-2 font-mono text-sm text-muted-foreground">{error}</p>
+            <p className="mt-2 font-mono text-sm text-muted-foreground">{error || "Invalid registration ID."}</p>
             <button
               onClick={() => router.push("/platform")}
               className="mt-6 border border-border bg-panel-2 px-6 py-2.5 font-mono text-sm text-foreground transition hover:border-cyan hover:text-cyan"
@@ -158,7 +153,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
     );
   }
 
-  const { scrim, slot, teamName, iglName, phone } = registration;
+  const { scrim, slot, teamName, iglName } = registration;
   const timingLabel = slotTimeLabel(slot);
   const formattedDate = new Date(scrim.date).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -307,7 +302,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-ember/20 text-[10px] font-bold text-ember">
                   3
                 </span>
-                <span>Wait 15 seconds below, then tap &quot;Continue &amp; Verify&quot;.</span>
+                <span>After paying, wait 15 seconds, then request manual payment review.</span>
               </div>
             </div>
 
@@ -347,7 +342,7 @@ export default function PaymentPage({ params }: { params?: Promise<{ id: string 
                 )}
               </button>
               <p className="mt-2 text-center font-mono text-[10px] text-muted-foreground">
-                No UTR or payment screenshot required. Admin verifies payment manually.
+                No UTR or screenshot is required. This button does not confirm payment or reserve a final slot; an admin checks the UPI receipt manually.
               </p>
             </div>
 

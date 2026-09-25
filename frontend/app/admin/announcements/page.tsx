@@ -73,7 +73,9 @@ export default function AdminAnnouncementsPage() {
   };
 
   useEffect(() => {
-    if (user?.isAdmin) loadData();
+    // Loading starts an async request; state updates occur after it completes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (user?.isAdmin) void loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 

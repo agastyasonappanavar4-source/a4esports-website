@@ -34,12 +34,6 @@ export default function NewScrimPage() {
     }
   }, [authLoading, user, router]);
 
-  // Reset slot selection to only valid options when mode changes.
-  useEffect(() => {
-    setSelectedSlots((prev) => prev.filter((t) => availableSlots.includes(t)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.mode]);
-
   const update = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -146,7 +140,11 @@ export default function NewScrimPage() {
                 </label>
                 <select
                   value={form.mode}
-                  onChange={(e) => update("mode", e.target.value as "BR" | "CS")}
+                  onChange={(e) => {
+                    const mode = e.target.value as "BR" | "CS";
+                    update("mode", mode);
+                    setSelectedSlots((prev) => prev.filter((time) => (mode === "BR" ? BR_SLOT_TIMES : CS_SLOT_TIMES).includes(time)));
+                  }}
                   className="w-full border border-border bg-panel-2 p-3.5 font-mono text-foreground outline-none focus:border-cyan"
                 >
                   <option value="BR">Battle Royale</option>

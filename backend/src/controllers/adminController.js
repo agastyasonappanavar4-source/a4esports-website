@@ -243,6 +243,10 @@ export const verifyManualPayment = async (req, res) => {
             return res.json({ success: true, message: "Payment already verified", data: registration });
         }
 
+        if (registration.paymentStatus !== "PENDING" || !registration.paymentVerificationRequestedAt) {
+            return res.status(400).json({ success: false, message: "This registration has not requested payment review." });
+        }
+
         const result = await prisma.$transaction(async (tx) => {
             const paidCount = await tx.registration.count({
                 where: { slotId: registration.slotId, paymentStatus: "PAID" },
@@ -318,6 +322,10 @@ export const rejectManualPayment = async (req, res) => {
 
         if (!registration) {
             return res.status(404).json({ success: false, message: "Registration not found" });
+        }
+
+        if (registration.paymentStatus !== "PENDING" || !registration.paymentVerificationRequestedAt) {
+            return res.status(400).json({ success: false, message: "Only pending payment review requests can be rejected." });
         }
 
         const updated = await prisma.registration.update({
@@ -396,5 +404,3 @@ export const moveRegistrationSlot = async (req, res) => {
         });
     }
 };
-
-

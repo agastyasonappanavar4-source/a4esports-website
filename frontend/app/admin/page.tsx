@@ -45,7 +45,7 @@ export default function AdminDashboardPage() {
 
   const [activeTab, setActiveTab] = useState<"tournaments" | "teams" | "pending">("tournaments");
   const [registrations, setRegistrations] = useState<AdminRegistrationWithDetails[] | null>(null);
-  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<AdminRegistrationWithDetails[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [processingPaymentId, setProcessingPaymentId] = useState<number | null>(null);

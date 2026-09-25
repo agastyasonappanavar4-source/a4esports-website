@@ -23,6 +23,7 @@ export interface MyRegistration {
   paymentStatus: "PENDING" | "PAID" | "FAILED";
   paymentVerificationRequestedAt?: string | null;
   paymentVerifiedAt?: string | null;
+  rejectionReason?: string | null;
   createdAt: string;
   scrim: {
     id: number;
@@ -97,4 +98,3 @@ export async function getRegistrationDetails(
   }
   return data.data;
 }
-

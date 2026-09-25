@@ -39,6 +39,15 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   return data.data;
 }
 
+export async function getAdminScrimByIdRequest(id: number): Promise<Scrim> {
+  const response = await fetch(`${API_URL}/api/scrims/${id}/admin`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  const data = await handle(response);
+  return data.data;
+}
+
 export interface ScrimInput {
   title: string;
   mode: "BR" | "CS";
@@ -442,5 +451,4 @@ export async function deleteSlotMatchRequest(matchId: number) {
   });
   return handle(response);
 }
-
 
