@@ -96,9 +96,7 @@ export default async function TournamentPage({
               {rulesList.length > 0 ? (
                 <ul className="space-y-3 font-mono text-sm text-muted-foreground">
                   {rulesList.map((rule, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-cyan" aria-hidden="true">✓</span>{rule}
-                    </li>
+                    <li key={i}>{rule}</li>
                   ))}
                 </ul>
               ) : (
