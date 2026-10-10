@@ -56,6 +56,7 @@ function getAuthHeaders(customHeaders: Record<string, string> = {}) {
 export async function getMyRegistrations(): Promise<MyRegistration[]> {
   const response = await fetch(`${API_URL}/api/registrations/me`, {
     credentials: "include",
+    cache: "no-store",
     headers: getAuthHeaders(),
   });
   const data = await response.json();
@@ -93,6 +94,7 @@ export async function getRegistrationDetails(
 ): Promise<RegistrationDetails> {
   const response = await fetch(`${API_URL}/api/registrations/${id}/details`, {
     credentials: "include",
+    cache: "no-store",
     headers: getAuthHeaders(),
   });
   const data = await response.json();

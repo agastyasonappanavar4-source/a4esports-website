@@ -16,41 +16,67 @@ import { useAuth } from "@/hooks/useAuth";
 import { getMyRegistrations, type MyRegistration } from "@/services/registrations";
 import { slotTimeLabel } from "@/lib/slotTime";
 
+function deduplicateRegistrations(regs: MyRegistration[]): MyRegistration[] {
+  const deduplicatedMap = new Map<string, MyRegistration>();
+  for (const reg of regs) {
+    const key = `${reg.scrim.id}_${reg.slot.id}`;
+    const existing = deduplicatedMap.get(key);
+    if (!existing || (reg.paymentStatus === "PAID" && existing.paymentStatus !== "PAID") ||
+      (reg.paymentStatus === existing.paymentStatus && reg.paymentVerificationRequestedAt && !existing.paymentVerificationRequestedAt)) {
+      deduplicatedMap.set(key, reg);
+    }
+  }
+  return Array.from(deduplicatedMap.values());
+}
+
 export default function RegisteredBanner() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [result, setResult] = useState<{ userId: number; registrations: MyRegistration[] } | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
+    let active = true;
 
     getMyRegistrations()
       .then((regs) => {
-        // Strict deduplication safeguard by scrimId + slotId
-        // Canonical priority: PAID > PENDING with verification requested > earliest ID
-        const deduplicatedMap = new Map<string, MyRegistration>();
-        for (const reg of (regs || [])) {
-          const key = `${reg.scrim.id}_${reg.slot.id}`;
-          const existing = deduplicatedMap.get(key);
-          if (!existing) {
-            deduplicatedMap.set(key, reg);
-          } else {
-            const regPaid = reg.paymentStatus === "PAID";
-            const existingPaid = existing.paymentStatus === "PAID";
-            if (regPaid && !existingPaid) {
-              deduplicatedMap.set(key, reg);
-            } else if (
-              regPaid === existingPaid &&
-              reg.paymentVerificationRequestedAt &&
-              !existing.paymentVerificationRequestedAt
-            ) {
-              deduplicatedMap.set(key, reg);
-            }
-          }
-        }
-        setResult({ userId: user.id, registrations: Array.from(deduplicatedMap.values()) });
+        if (active) setResult({ userId, registrations: deduplicateRegistrations(regs || []) });
       })
-      .catch(() => setResult({ userId: user.id, registrations: [] }));
-  }, [user]);
+      .catch(() => { if (active) setResult({ userId, registrations: [] }); });
+    return () => { active = false; };
+  }, [userId]);
+
+  const hasPendingPayment = Boolean(userId && result && result.userId === userId &&
+    result.registrations.some((reg) => reg.paymentStatus === "PENDING"));
+
+  useEffect(() => {
+    if (!userId || !hasPendingPayment) return;
+    let active = true;
+    let inFlight = false;
+
+    const checkPayment = async () => {
+      if (!active || inFlight || document.hidden) return;
+      inFlight = true;
+      try {
+        const regs = await getMyRegistrations();
+        if (active) setResult({ userId, registrations: deduplicateRegistrations(regs || []) });
+      } catch {
+        // Keep the last known status and try again at the next check.
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const interval = window.setInterval(checkPayment, 15000);
+    window.addEventListener("focus", checkPayment);
+    document.addEventListener("visibilitychange", checkPayment);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", checkPayment);
+      document.removeEventListener("visibilitychange", checkPayment);
+    };
+  }, [userId, hasPendingPayment]);
 
   const registrations = result && user && result.userId === user.id ? result.registrations : [];
   // Only visible when user is authenticated AND has registrations

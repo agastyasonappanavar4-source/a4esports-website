@@ -76,6 +76,37 @@ export default function MyMatchDetailPage({ params }: { params: Promise<{ id: st
       .finally(() => setLoading(false));
   }, [registrationId]);
 
+  const paymentPending = details?.registration.paymentStatus === "PENDING";
+
+  useEffect(() => {
+    if (!paymentPending || !Number.isSafeInteger(registrationId) || registrationId <= 0) return;
+    let active = true;
+    let inFlight = false;
+
+    const checkPayment = async () => {
+      if (!active || inFlight || document.hidden) return;
+      inFlight = true;
+      try {
+        const updated = await getRegistrationDetails(registrationId);
+        if (active) setDetails(updated);
+      } catch {
+        // Preserve the current details until the next check succeeds.
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const interval = window.setInterval(checkPayment, 15000);
+    window.addEventListener("focus", checkPayment);
+    document.addEventListener("visibilitychange", checkPayment);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", checkPayment);
+      document.removeEventListener("visibilitychange", checkPayment);
+    };
+  }, [registrationId, paymentPending]);
+
   useEffect(() => {
     if (!details?.scrim?.date || !details?.slot?.time) return;
     const target = combineDateWithSlot(details.scrim.date, details.slot.time);
