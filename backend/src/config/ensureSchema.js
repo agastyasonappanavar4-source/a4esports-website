@@ -1,4 +1,5 @@
 import prisma from "./prisma.js";
+import { restoreMissingBrSlots } from "./restoreMissingBrSlots.js";
 
 export async function ensureDatabaseSchema() {
     try {
@@ -237,6 +238,15 @@ export async function ensureDatabaseSchema() {
         console.log("Database schema is synchronized.");
     } catch (error) {
         console.warn("Schema check warning (non-fatal):", error?.message || error);
+    }
+
+    // Recover older BR lobbies that have no Slot records, so admins can manage
+    // their time slots and release room credentials after a deployment.
+    try {
+        const restored = await restoreMissingBrSlots(prisma);
+        if (restored > 0) console.log(`✅ Restored ${restored} missing BR lobby time slots.`);
+    } catch (error) {
+        console.warn("BR slot recovery warning (non-fatal):", error?.message || error);
     }
 
     // 7. Production-Safe Admin Synchronization
